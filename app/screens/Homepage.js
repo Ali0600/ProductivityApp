@@ -1,4 +1,5 @@
 import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import Task from "../components/Task";
 
 function Homepage(props){
 
