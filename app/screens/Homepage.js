@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList } from "react-native";
 import Task from "../components/Task";
 import Icons from '@expo/vector-icons/AntDesign';
 
@@ -8,6 +8,8 @@ function Homepage(props){
     const [task, setTask] = useState();
     const [taskItems, setTaskItems] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
+
+    const [activeTaskType, setActiveTaskType] = useState('Basic')
 
     const handleAddTask = () => {
         setTaskItems([...taskItems, task]);
@@ -25,6 +27,19 @@ function Homepage(props){
                         onChangeText={text => setTask(text)}
                         placeholder={'Task Name'}
                         value={task}
+                    />
+
+                </View>
+
+                <View style={styles.taskTypeContainer}>
+                    <FlatList
+//                        data = {taskTypes}
+                        renderItem={({item}) => (
+                            <TouchableOpacity>
+                                <Text>{item}</Text>
+                            </TouchableOpacity>
+                        )}
+
                     />
 
                 </View>

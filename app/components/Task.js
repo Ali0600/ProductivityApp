@@ -2,16 +2,11 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const Task = (props) => {
     return (
-        <View style={{flexDirection: 'row'}}>
-            <View style={styles.complete}>
-                
+        <TouchableOpacity>
+            <View text={props.text} style={styles.item} key={props.uniqueID}>
+                <Text>{props.text}</Text>
             </View>
-            <TouchableOpacity>
-                <View text={props.text} style={styles.item} key={props.uniqueID}>
-                    <Text>{props.text}</Text>
-                </View>
-            </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
     );
 }
 
@@ -20,17 +15,13 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         flexDirection: "row",
         padding: 20,
-        alignItems: "center",
         borderRadius: 20,
         borderColor: "black",
-        margin: 5,
-        flex: '75%'
+        textAlign: 'center',
     },
-    complete: {
-        backgroundColor: "green",
-        flex: "25%",
+    item2: {
+        backgroundColor: "white",
         padding: 20,
-        borderRadius: 20,
     }
 })
 
