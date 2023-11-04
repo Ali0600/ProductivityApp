@@ -1,12 +1,13 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 const Task = (props) => {
     return (
-        <TouchableOpacity>
+        <Swipeable>
             <View text={props.text} style={styles.item} key={props.uniqueID}>
                 <Text>{props.text}</Text>
             </View>
-        </TouchableOpacity>
+        </Swipeable>
     );
 }
 
