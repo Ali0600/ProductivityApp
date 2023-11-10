@@ -1,18 +1,50 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Component, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, Animated } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 
-const Task = (props) => {
+
+const LeftSwipeComponent = ({index, setTaskItems, taskItems}) =>{  
+    const handleLeftSwipe = () => {
+        const newTaskItems = [...taskItems];
+        const [swipedTask] = newTaskItems.splice(index, 1);
+        swipedTask.creationTime = new Date();
+        newTaskItems.push(swipedTask);
+        newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
+        setTaskItems(newTaskItems)
+        };
+    return(
+        <TouchableOpacity style={styles.completeBox} onPress={handleLeftSwipe}>
+            <View>
+                <Text>Complete</Text>
+            </View>
+        </TouchableOpacity>
+    );    
+};
+
+const rightSwipe = () => {
+    return(
+        <View style={styles.deleteBox}>
+            <Text>Delete</Text>
+        </View>
+    )
+}
+
+const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
     return (
-        <Swipeable>
-            <View text={props.text} style={styles.item} key={props.uniqueID}>
-                <Text>{props.text}</Text>
+        <Swipeable renderRightActions={rightSwipe} 
+            renderLeftActions={() => (
+                <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems}/>
+            )}>
+            <View style={styles.taskContainer}>
+                <Text>{text}</Text>
+                <Text>{creationTime.toString()}</Text>
             </View>
         </Swipeable>
     );
 }
 
 const styles = StyleSheet.create({
-    item: {
+    taskContainer: {
         backgroundColor: "white",
         flexDirection: "row",
         padding: 20,
@@ -20,9 +52,13 @@ const styles = StyleSheet.create({
         borderColor: "black",
         textAlign: 'center',
     },
-    item2: {
-        backgroundColor: "white",
-        padding: 20,
+    deleteBox: {
+        backgroundColor: "red",
+        flex: 0.2
+    },
+    completeBox: {
+        backgroundColor: "green",
+
     }
 })
 

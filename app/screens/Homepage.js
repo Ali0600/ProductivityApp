@@ -5,17 +5,20 @@ import Icons from '@expo/vector-icons/AntDesign';
 
 function Homepage(props){
 
-    const [task, setTask] = useState();
+    const [task, setTask] = useState('');
     const [taskItems, setTaskItems] = useState([]);
+    const [creationTime, setCreationTime] = useState(new Date());
     const [modalVisible, setModalVisible] = useState(false);
 
-    const [activeTaskType, setActiveTaskType] = useState('Basic')
-
     const handleAddTask = () => {
-        setTaskItems([...taskItems, task]);
-        setTask(null);
-        setModalVisible(false);
+        if (task){
+            const newTask = {text: task, creationTime: new Date()};
+            setTaskItems([...taskItems, newTask].sort((a, b) => a.creationTime - b.creationTime));
+            setTask('');
+            setModalVisible(false);
+        }
     }
+
 
     return(
         <View style={styles.container}>
@@ -26,20 +29,7 @@ function Homepage(props){
                         style={styles.inputForms}
                         onChangeText={text => setTask(text)}
                         placeholder={'Task Name'}
-                        value={task}
-                    />
-
-                </View>
-
-                <View style={styles.taskTypeContainer}>
-                    <FlatList
-//                        data = {taskTypes}
-                        renderItem={({item}) => (
-                            <TouchableOpacity>
-                                <Text>{item}</Text>
-                            </TouchableOpacity>
-                        )}
-
+                        value={props.task}
                     />
 
                 </View>
@@ -61,7 +51,8 @@ function Homepage(props){
 
             <ScrollView>
                 {
-                    taskItems.map( (task, index) => <Task text={task} key = {index}/> )
+                    taskItems.map( (task,index) => 
+                    <Task text={task.text} key = {index} index={index} creationTime={task.creationTime} setTaskItems={setTaskItems} taskItems={taskItems}/> )
                 }
             </ScrollView>
 
@@ -90,7 +81,8 @@ const styles = StyleSheet.create({
     textFont: {
         fontSize: 24,
         fontWeight: "bold",
-        paddingBottom: 10
+        paddingBottom: 10,
+        textAlign: "center"
     },
     buttonWrapper: {
         position: "relative",
