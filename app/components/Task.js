@@ -21,17 +21,27 @@ const LeftSwipeComponent = ({index, setTaskItems, taskItems}) =>{
     );    
 };
 
-const rightSwipe = () => {
+const RightSwipeComponent = ({index, setTaskItems, taskItems}) => {
+    const handleRightSwipe = () =>{
+        const newTaskItems = [...taskItems];
+        newTaskItems.splice(index, 1);
+        setTaskItems(newTaskItems);
+    }
     return(
-        <View style={styles.deleteBox}>
-            <Text>Delete</Text>
-        </View>
+        <TouchableOpacity style={styles.deleteBox} onPress={handleRightSwipe}>
+            <View>
+                <Text>Delete</Text>
+            </View>
+        </TouchableOpacity>
     )
 }
 
 const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
     return (
-        <Swipeable renderRightActions={rightSwipe} 
+        <Swipeable 
+            renderRightActions={() => (
+                <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems}/>
+            )} 
             renderLeftActions={() => (
                 <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems}/>
             )}>
