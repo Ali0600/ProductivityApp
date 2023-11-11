@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         borderColor: "black",
         textAlign: 'center',
+        justifyContent: "space-between"
     },
     deleteBox: {
         backgroundColor: "red",
