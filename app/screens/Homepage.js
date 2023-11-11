@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList } from "react-native";
 import Task from "../components/Task";
 import Icons from '@expo/vector-icons/AntDesign';
+import moment from "moment";
 
 function Homepage(props){
 
@@ -9,10 +10,19 @@ function Homepage(props){
     const [taskItems, setTaskItems] = useState([]);
     const [creationTime, setCreationTime] = useState(new Date());
     const [modalVisible, setModalVisible] = useState(false);
+    const[currentTime, setCurrentTime] = useState(moment());
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setCurrentTime(moment());
+        }, 10000);
+
+        return() => clearInterval(intervalId);
+    }, []);
 
     const handleAddTask = () => {
         if (task){
-            const newTask = {text: task, creationTime: new Date()};
+            const newTask = {text: task, creationTime: currentTime.toDate()};
             setTaskItems([...taskItems, newTask].sort((a, b) => a.creationTime - b.creationTime));
             setTask('');
             setModalVisible(false);
@@ -52,7 +62,7 @@ function Homepage(props){
             <ScrollView>
                 {
                     taskItems.map( (task,index) => 
-                    <Task text={task.text} key = {index} index={index} creationTime={task.creationTime} setTaskItems={setTaskItems} taskItems={taskItems}/> )
+                    <Task text={task.text} key = {index} index={index} creationTime={moment(task.creationTime).fromNow()} setTaskItems={setTaskItems} taskItems={taskItems}/> )
                 }
             </ScrollView>
 
