@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList } from "react-native";
 import Task from "../components/Task";
-import Icons from '@expo/vector-icons/AntDesign';
+import AntDesignIcons from '@expo/vector-icons/AntDesign';
+import EntypoIcons from '@expo/vector-icons/Entypo';
+import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 
 function Homepage(props){
@@ -46,17 +48,25 @@ function Homepage(props){
 
                 <View style={styles.buttonWrapper}>
                         <TouchableOpacity>
-                            <Icons name='minuscircle' size={60} onPress={() => setModalVisible(false) }/>
+                            <AntDesignIcons name='minuscircle' size={60} onPress={() => setModalVisible(false) }/>
                         </TouchableOpacity>
 
                         <TouchableOpacity >
-                            <Icons name='pluscircle' size={60} onPress={() => handleAddTask()}/>
+                            <AntDesignIcons name='pluscircle' size={60} onPress={() => handleAddTask()}/>
                         </TouchableOpacity>
                 </View>
             </Modal>
 
-            <SafeAreaView style={styles.productNameContainer}>
-                <Text style={styles.textFont}>Productivity App</Text>
+            <SafeAreaView style={styles.productName}>
+                <View flexDirection="row" justifyContent="space-between">
+                    <TouchableOpacity>
+                       <EntypoIcons name='menu' size={40}/>
+                    </TouchableOpacity>
+                    <Text style={styles.textFont}>Productivity App</Text>
+                    <TouchableOpacity>
+                       <FeatherIcons name='settings' size={40}/>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView>
 
             <ScrollView>
@@ -68,7 +78,7 @@ function Homepage(props){
 
             <View style={styles.buttonWrapper}>
                 <TouchableOpacity>
-                    <Icons name='pluscircle' size={60} onPress={() => setModalVisible(true)}/>
+                    <AntDesignIcons name='pluscircle' size={60} onPress={() => setModalVisible(true)}/>
                 </TouchableOpacity>
             </View>
 
@@ -86,13 +96,12 @@ const styles = StyleSheet.create({
     },
     productName: {
         backgroundColor: "#80D8FF",
-        alignItems: "center",
     },
     textFont: {
         fontSize: 24,
         fontWeight: "bold",
-        paddingBottom: 10,
-        textAlign: "center"
+        textAlign: "center",
+        paddingTop: 4,
     },
     buttonWrapper: {
         position: "relative",
