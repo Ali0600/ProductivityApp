@@ -10,8 +10,9 @@ function Homepage(props){
 
     const [task, setTask] = useState('');
     const [taskItems, setTaskItems] = useState([]);
-    const [creationTime, setCreationTime] = useState(new Date());
+//    const [creationTime, setCreationTime] = useState(new Date());
     const [modalVisible, setModalVisible] = useState(false);
+    const [menuVisible, setMenuPanalVisible] = useState(false);
     const[currentTime, setCurrentTime] = useState(moment());
 
     useEffect(() => {
@@ -38,12 +39,11 @@ function Homepage(props){
             <Modal visible={modalVisible} animationType="slide" transparent={true}> 
                 <View style={styles.modalContent}>
                     <TextInput
-                        style={styles.inputForms}
-                        onChangeText={text => setTask(text)}
-                        placeholder={'Task Name'}
-                        value={props.task}
+                            style={styles.inputForms}
+                            onChangeText={text => setTask(text)}
+                            placeholder={'Task Name'}
+                            value={props.task}
                     />
-
                 </View>
 
                 <View style={styles.buttonWrapper}>
@@ -57,12 +57,24 @@ function Homepage(props){
                 </View>
             </Modal>
 
+            <Modal visible={menuVisible} animationType="slide" transparent={true}>
+                <SafeAreaView style={styles.menuContainer}>
+                    <AntDesignIcons name='closecircle' size={40} backgroundColor='white' onPress={()=> setMenuPanalVisible(false)}/>
+                    
+                    <View style={styles.menuLists}>
+
+                    </View>
+                </SafeAreaView>
+            </Modal>
+
             <SafeAreaView style={styles.productName}>
                 <View flexDirection="row" justifyContent="space-between">
                     <TouchableOpacity>
-                       <EntypoIcons name='menu' size={40}/>
+                       <EntypoIcons name='menu' size={40} onPress={() => setMenuPanalVisible(true)}/>
                     </TouchableOpacity>
+
                     <Text style={styles.textFont}>Productivity App</Text>
+
                     <TouchableOpacity>
                        <FeatherIcons name='settings' size={40}/>
                     </TouchableOpacity>
@@ -82,20 +94,22 @@ function Homepage(props){
                 </TouchableOpacity>
             </View>
 
+
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
 
             </KeyboardAvoidingView>
+
         </View>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
-      backgroundColor: "#B5FFFF",
+      backgroundColor: "black",
       flex: 1,
     },
     productName: {
-        backgroundColor: "#80D8FF",
+        backgroundColor: "white",
     },
     textFont: {
         fontSize: 24,
@@ -106,9 +120,9 @@ const styles = StyleSheet.create({
     buttonWrapper: {
         position: "relative",
         width: "100%",
-        paddingBottom: 30,
+        paddingBottom: 35,
         paddingTop: 10,
-        backgroundColor: "#80D8FF",
+        backgroundColor: "white",
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -127,6 +141,16 @@ const styles = StyleSheet.create({
         borderRadius: 1,
         borderColor: "black",
         borderWidth: 1,
+    },
+    menuContainer: {
+        justifyContent: 'center',
+        flexDirection: "column",
+        flex: 1,
+        justifyContent: "flex-start"
+    },
+    menuLists: {
+        backgroundColor: "black",
+        flex: 1,
     }
   })
 
