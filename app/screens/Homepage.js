@@ -59,7 +59,13 @@ function Homepage(props){
 
             <Modal visible={menuVisible} animationType="slide" transparent={true}>
                 <SafeAreaView style={styles.menuContainer}>
-                    <AntDesignIcons name='closecircle' size={40} backgroundColor='white' onPress={()=> setMenuPanalVisible(false)}/>
+                    <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
+                        <AntDesignIcons name='closecircle' size={40} backgroundColor='white' onPress={()=> setMenuPanalVisible(false)}/>
+
+                        <Text backgroundColor="yellow">Lists</Text>
+
+                        <AntDesignIcons name='pluscircle' size={40}/>
+                    </View>
                     
                     <View style={styles.menuLists}>
 
