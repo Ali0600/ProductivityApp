@@ -1,8 +1,5 @@
-import { Component, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Animated } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { Moment } from "moment/moment";
-
 
 const LeftSwipeComponent = ({index, setTaskItems, taskItems}) =>{  
     const handleLeftSwipe = () => {

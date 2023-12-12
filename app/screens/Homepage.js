@@ -8,12 +8,20 @@ import moment from "moment";
 
 function Homepage(props){
 
+
+    
     const [task, setTask] = useState('');
     const [taskItems, setTaskItems] = useState([]);
 //    const [creationTime, setCreationTime] = useState(new Date());
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuPanalVisible] = useState(false);
-    const[currentTime, setCurrentTime] = useState(moment());
+    const [taskListVisible, setTaskListVisible] = useState(false);
+    const [currentTime, setCurrentTime] = useState(moment());
+
+    
+    const [currentList, setCurrentList] = useState('Tasks');
+    const [lists, setLists] = useState(["Tasks"]);
+    const [tasksByList, setTasksByList] = useState("");
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -23,10 +31,28 @@ function Homepage(props){
         return() => clearInterval(intervalId);
     }, []);
 
+    const switchList = (listName) => {
+        setCurrentList(listName);
+        setMenuPanalVisible(false);
+    }
+
+    const addNewList = (listName) => {
+        switchList(listName);
+        setTasksByList(prevState => ({
+            ...prevState,
+            [listName]: prevState[listName] ? prevState[listName]: []
+        }));
+        setLists([...lists, listName]);
+        setTaskListVisible(false);
+    }
+
     const handleAddTask = () => {
         if (task){
-            const newTask = {text: task, creationTime: currentTime.toDate()};
-            setTaskItems([...taskItems, newTask].sort((a, b) => a.creationTime - b.creationTime));
+            const newTask = {text: task, creationTime: currentTime.toDate(), list: currentList};
+            setTasksByList(prevState => ({
+                ...prevState,
+                [currentList]: prevState[currentList] ? [...prevState[currentList], newTask].sort((a, b) => a.creationTime - b.creationTime) : [newTask]
+            }));  
             setTask('');
             setModalVisible(false);
         }
@@ -64,13 +90,40 @@ function Homepage(props){
 
                         <Text backgroundColor="yellow">Lists</Text>
 
-                        <AntDesignIcons name='pluscircle' size={40}/>
+                        <AntDesignIcons name='pluscircle' size={40} onPress={() => setTaskListVisible(true)}/>
                     </View>
                     
                     <View style={styles.menuLists}>
-
+                        <ScrollView>
+                        {lists.map((listName, index) => (
+                            <TouchableOpacity key={index} onPress={() => switchList(listName)}>
+                                <Text style={styles.listWrapper}>{listName}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        </ScrollView>
                     </View>
                 </SafeAreaView>
+
+                <Modal visible={taskListVisible} animationType="slide" transparent={true}>
+                    <View style={styles.taskListModal}>
+                        <TextInput
+                                style={styles.inputForms}
+                                onChangeText={text => setCurrentList(text)}
+                                placeholder={'Task List Name'}
+                                //value={listName}
+                        />
+                    </View>
+
+                    <View style={styles.buttonWrapper}>
+                        <TouchableOpacity>
+                            <AntDesignIcons name='minuscircle' size={60} onPress={() => setTaskListVisible(false) }/>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity >
+                            <AntDesignIcons name='pluscircle' size={60} onPress={() => addNewList(currentList)}/>
+                        </TouchableOpacity>
+                    </View>
+                </Modal>
             </Modal>
 
             <SafeAreaView style={styles.productName}>
@@ -89,8 +142,16 @@ function Homepage(props){
 
             <ScrollView>
                 {
-                    taskItems.map( (task,index) => 
-                    <Task text={task.text} key = {index} index={index} creationTime={moment(task.creationTime).fromNow()} setTaskItems={setTaskItems} taskItems={taskItems}/> )
+                    tasksByList[currentList] && tasksByList[currentList].map((task, index) => (
+                        <Task
+                            text={task.text}
+                            key={index}
+                            index={index}
+                            creationTime={moment(task.creationTime).fromNow()}
+                            setTaskItems={(newTaskItems) => setTasksByList(prevState => ({ ...prevState, [currentList]: newTaskItems }))}
+                            taskItems={tasksByList[currentList]}
+                        />
+                    ))
                 }
             </ScrollView>
 
@@ -142,6 +203,15 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "black"
     },
+    taskListModal:{
+        backgroundColor: "white",
+        flex: 1,
+        margin: 20,
+        marginTop: 40,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "black"
+    },
     inputForms: {
         padding: 10,
         borderRadius: 1,
@@ -157,7 +227,19 @@ const styles = StyleSheet.create({
     menuLists: {
         backgroundColor: "black",
         flex: 1,
+    },
+    listWrapper: {
+        position: "relative",
+        width: "100%",
+        paddingBottom: 35,
+        paddingTop: 10,
+        backgroundColor: "white",
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
     }
   })
 
 export default Homepage;
+
+//                                 <Text style={{ color: listName === currentList ? "red" : "white" }}>{listName}</Text>
