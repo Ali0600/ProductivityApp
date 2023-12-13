@@ -1,7 +1,8 @@
+import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Animated } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 
-const LeftSwipeComponent = ({index, setTaskItems, taskItems}) =>{  
+const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) =>{  
     const handleLeftSwipe = () => {
         const newTaskItems = [...taskItems];
         const [swipedTask] = newTaskItems.splice(index, 1);
@@ -9,6 +10,7 @@ const LeftSwipeComponent = ({index, setTaskItems, taskItems}) =>{
         newTaskItems.push(swipedTask);
         newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
         setTaskItems(newTaskItems)
+        closeSwipe();
         };
     return(
         <TouchableOpacity style={styles.completeBox} onPress={handleLeftSwipe}>
@@ -19,11 +21,12 @@ const LeftSwipeComponent = ({index, setTaskItems, taskItems}) =>{
     );    
 };
 
-const RightSwipeComponent = ({index, setTaskItems, taskItems}) => {
+const RightSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) => {
     const handleRightSwipe = () =>{
         const newTaskItems = [...taskItems];
         newTaskItems.splice(index, 1);
         setTaskItems(newTaskItems);
+        closeSwipe();
     }
     return(
         <TouchableOpacity style={styles.deleteBox} onPress={handleRightSwipe}>
@@ -35,13 +38,21 @@ const RightSwipeComponent = ({index, setTaskItems, taskItems}) => {
 }
 
 const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
+    const swipeableRef = useRef(null);
+
+    const closeSwipe = () => {
+        if(swipeableRef.current){
+            swipeableRef.current.close();
+        }
+    }
+
     return (
-        <Swipeable 
+        <Swipeable ref={swipeableRef}
             renderRightActions={() => (
-                <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems}/>
+                <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
             )} 
             renderLeftActions={() => (
-                <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems}/>
+                <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
             )}>
             <View style={styles.taskContainer}>
                 <Text>{text}</Text>
