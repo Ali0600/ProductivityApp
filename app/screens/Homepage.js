@@ -5,6 +5,7 @@ import AntDesignIcons from '@expo/vector-icons/AntDesign';
 import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function Homepage(props){
 

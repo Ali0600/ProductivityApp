@@ -1,6 +1,8 @@
 import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Animated } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 
 const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) =>{  
     const handleLeftSwipe = () => {
@@ -47,18 +49,20 @@ const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
     }
 
     return (
-        <Swipeable ref={swipeableRef}
-            renderRightActions={() => (
-                <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
-            )} 
-            renderLeftActions={() => (
-                <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
-            )}>
-            <View style={styles.taskContainer}>
-                <Text>{text}</Text>
-                <Text>{creationTime.toString()}</Text>
-            </View>
-        </Swipeable>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <Swipeable ref={swipeableRef}
+                renderRightActions={() => (
+                    <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
+                )} 
+                renderLeftActions={() => (
+                    <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
+                )}>
+                <View style={styles.taskContainer}>
+                    <Text>{text}</Text>
+                    <Text>{creationTime.toString()}</Text>
+                </View>
+            </Swipeable>
+        </GestureHandlerRootView>
     );
 }
 
