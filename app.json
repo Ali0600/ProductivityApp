@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ProductivityApp",
-    "slug": "ProductivityApp",
+    "name": "Procrastinot",
+    "slug": "Procrastinot",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mhassan0600.ProductivityApp"
+      "bundleIdentifier": "com.mhassan0600.Procrastinot"
     },
     "android": {
       "adaptiveIcon": {
