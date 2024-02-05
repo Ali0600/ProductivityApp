@@ -133,7 +133,7 @@ function Homepage(props){
                        <EntypoIcons name='menu' size={40} onPress={() => setMenuPanalVisible(true)}/>
                     </TouchableOpacity>
 
-                    <Text style={styles.textFont}>Procrastinot</Text>
+                    <Text style={styles.textFont}>ADHDone</Text>
 
                     <TouchableOpacity>
                        <FeatherIcons name='settings' size={40}/>

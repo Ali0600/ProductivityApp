@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Procrastinot",
-    "slug": "Procrastinot",
+    "name": "ADHDone",
+    "slug": "adhdone",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mhassan0600.Procrastinot"
+      "bundleIdentifier": "com.mhassan0600.ADHDone"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +29,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "e057b200-7670-4303-9e3e-69c68f0799bc"
+        "projectId": "9b2a5d46-f675-4cd2-98e3-ee339b78399c"
       }
     },
     "runtimeVersion": {
@@ -37,6 +37,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/e057b200-7670-4303-9e3e-69c68f0799bc"
-    }
+    },
+    "owner": "mhassan0600"
   }
 }
