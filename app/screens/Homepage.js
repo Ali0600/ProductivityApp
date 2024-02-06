@@ -32,6 +32,20 @@ function Homepage(props){
         return() => clearInterval(intervalId);
     }, []);
 
+    useEffect(() => {
+        const loadTasks = async () => {
+            try {
+                const savedTasks = await AsyncStorage.getItem(currentList);
+                if (savedTasks) {
+                    setTasksByList({ ...tasksByList, [currentList]: JSON.parse(savedTasks) });
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        };
+        loadTasks();
+    }, [currentList]);
+
     const switchList = (listName) => {
         setCurrentList(listName);
         setMenuPanalVisible(false);
