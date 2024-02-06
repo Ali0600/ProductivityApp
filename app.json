@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ADHDone",
+    "name": "ADHD Habits",
     "slug": "adhd-habits",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mhassan0600.ADHDone"
+      "bundleIdentifier": "com.mhassan0600.adhd-habits"
     },
     "android": {
       "adaptiveIcon": {
