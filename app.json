@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ADHDone",
-    "slug": "adhdone",
+    "slug": "adhd-habits",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
@@ -29,7 +29,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "66b9e592-a03e-4436-a836-fda67cd00a28"
+        "projectId": "3301b407-d8a6-4018-bf3c-4f1db722f073"
       }
     },
     "runtimeVersion": {
