@@ -46,13 +46,29 @@ function Homepage(props){
         loadTasks();
     }, [currentList]);
 
+    useEffect(() => {
+        const loadLists = async () => {
+            try {
+                const savedLists = await AsyncStorage.getItem('lists');
+                if (savedLists) {
+                    setLists(JSON.parse(savedLists));
+                }
+            } catch (error) {
+                console.error('Error loading lists:', error);
+            }
+        };
+        loadLists();
+    }, []);
+
     const switchList = (listName) => {
         setCurrentList(listName);
         setMenuPanalVisible(false);
     }
 
-    const addNewList = (listName) => {
+    const addNewList = async (listName) => {
         switchList(listName);
+        const updatedLists = lists.includes(listName) ? [...lists] : [...lists, listName];
+        await AsyncStorage.setItem(currentList, JSON.stringify(updatedLists));
         setTasksByList(prevState => ({
             ...prevState,
             [listName]: prevState[listName] ? prevState[listName]: []
