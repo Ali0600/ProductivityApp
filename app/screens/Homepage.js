@@ -47,9 +47,11 @@ function Homepage(props){
         setTaskListVisible(false);
     }
 
-    const handleAddTask = () => {
+    const handleAddTask = async () => {
         if (task){
             const newTask = {text: task, creationTime: currentTime.toDate(), list: currentList};
+            const updatedTasks = tasksByList[currentList] ? [...tasksByList[currentList], newTask] : [newTask];
+            await AsyncStorage.setItem(currentList, JSON.stringify(updatedTasks));
             setTasksByList(prevState => ({
                 ...prevState,
                 [currentList]: prevState[currentList] ? [...prevState[currentList], newTask].sort((a, b) => a.creationTime - b.creationTime) : [newTask]
