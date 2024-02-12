@@ -13,9 +13,6 @@ const LeftSwipeComponent = async ({index, setTaskItems, taskItems, closeSwipe}) 
         newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
         setTaskItems(newTaskItems)
         closeSwipe();
-        try{
-            await AsyncStorage.setItem("lists", JSON.stringify(newTaskItems));
-        }
         };
     return(
         <TouchableOpacity style={styles.completeBox} onPress={handleLeftSwipe}>
