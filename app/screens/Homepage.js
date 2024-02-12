@@ -8,11 +8,7 @@ import moment from "moment";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function Homepage(props){
-
-
-    
     const [task, setTask] = useState('');
-    const [taskItems, setTaskItems] = useState([]);
 //    const [creationTime, setCreationTime] = useState(new Date());
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuPanalVisible] = useState(false);
@@ -21,67 +17,111 @@ function Homepage(props){
 
     
     const [currentList, setCurrentList] = useState('Tasks');
-    const [lists, setLists] = useState(["Tasks"]);
-    const [tasksByList, setTasksByList] = useState("");
+    const [lists, setLists] = useState([
+        {
+            listName: 'Tasks',
+            tasks: [
+                {taskName: "PushUps", creationTime: currentTime.toDate()},
+            ]
+        },
+        {
+            listName: 'Daily Habits',
+            tasks: [
+                {taskName: "Learn German", creationTime: currentTime.toDate()},
+            ]
+        }
+    ]);
+
+    const clearAsyncStorage = async () => {
+        try {
+            await AsyncStorage.clear();
+            console.log('AsyncStorage cleared successfully.');
+        } catch (error) {
+            console.error('Error clearing AsyncStorage:', error);
+        }
+    };
 
     useEffect(() => {
         const intervalId = setInterval(() => {
             setCurrentTime(moment());
-        }, 10000);
+        }, 2000);
 
         return() => clearInterval(intervalId);
     }, []);
 
     useEffect(() => {
-        const loadTasks = async () => {
+        const getLists = async () => {
             try {
-                const savedTasks = await AsyncStorage.getItem(currentList);
-                if (savedTasks) {
-                    setTasksByList({ ...tasksByList, [currentList]: JSON.parse(savedTasks) });
+                const list = await AsyncStorage.getItem('lists');
+                if (list) {
+                    setLists(JSON.parse(list));
                 }
             } catch (error) {
-                console.error('Error loading tasks:', error);
+                console.error('Error getting lists from AsyncStorage:', error);
             }
         };
-        loadTasks();
-    }, [currentList]);
+        getLists();
+    }, []);
 
     useEffect(() => {
-        const loadLists = async () => {
+        const saveLists = async () => {
             try {
-                const savedLists = await AsyncStorage.getItem('lists');
-                if (savedLists) {
-                    setLists(JSON.parse(savedLists));
-                }
+                await AsyncStorage.setItem('lists', JSON.stringify(lists));
             } catch (error) {
-                console.error('Error loading lists:', error);
+                console.error('Error saving lists to AsyncStorage:', error);
             }
         };
-        loadLists();
-    }, []);
+        saveLists();
+    }, [lists]);
+
+    //console.log("Task: "+ lists[getIndexOfList(currentList)].tasks[0].taskName);
+    const handleAddTask = async () => {
+        const newTask = {taskName: task, creationTime: currentTime.toDate(), list: currentList};
+        lists[getIndexOfList(currentList)].tasks.push(newTask);
+        await AsyncStorage.setItem('lists', JSON.stringify(lists));
+        //setLists(prevLists => [...prevLists, {listName: newTask.text, tasks: [...prevLists[getIndexOfList(currentList)].tasks, newTask.text]}]);
+        //setLists(prevLists => [...prevLists, {listName: currentList, tasks: [...prevLists[getIndexOfList()].tasks, newTask]}]);
+        setModalVisible(false);
+    }
+
+    const addNewList = async (newListName) =>{
+        switchList(newListName);
+        //loadLists();
+        const newList = {listName: newListName, tasks: []};
+        console.log("List Names: "+ lists[getIndexOfList(currentList)].listName);
+        lists[getIndexOfList(currentList)].push(newList);
+        console.log("List Names: "+ lists[getIndexOfList(currentList)].listName);
+        await AsyncStorage.setItem('lists', JSON.stringify(lists));
+    }
 
     const switchList = (listName) => {
         setCurrentList(listName);
         setMenuPanalVisible(false);
     }
 
-    const addNewList = async (listName) => {
+    const getIndexOfList = () => {
+        return lists.findIndex(list => list.listName === currentList);
+    }
+
+    /*const switchList = (listName) => {
+        //clearAsyncStorage();
+        setCurrentList(listName);
+        setMenuPanalVisible(false);
+    }
+
+    const addNewList = (listName) => {
         switchList(listName);
-        const updatedLists = lists.includes(listName) ? [...lists] : [...lists, listName];
-        await AsyncStorage.setItem(currentList, JSON.stringify(updatedLists));
         setTasksByList(prevState => ({
             ...prevState,
             [listName]: prevState[listName] ? prevState[listName]: []
         }));
         setLists([...lists, listName]);
         setTaskListVisible(false);
-    }
+    }*/
 
-    const handleAddTask = async () => {
+    /*const handleAddTask =() => {
         if (task){
             const newTask = {text: task, creationTime: currentTime.toDate(), list: currentList};
-            const updatedTasks = tasksByList[currentList] ? [...tasksByList[currentList], newTask] : [newTask];
-            await AsyncStorage.setItem(currentList, JSON.stringify(updatedTasks));
             setTasksByList(prevState => ({
                 ...prevState,
                 [currentList]: prevState[currentList] ? [...prevState[currentList], newTask].sort((a, b) => a.creationTime - b.creationTime) : [newTask]
@@ -89,7 +129,7 @@ function Homepage(props){
             setTask('');
             setModalVisible(false);
         }
-    }
+    }*/
 
 
     return(
@@ -111,7 +151,7 @@ function Homepage(props){
                         </TouchableOpacity>
 
                         <TouchableOpacity >
-                            <AntDesignIcons name='pluscircle' size={60} onPress={() => handleAddTask()}/>
+                            <AntDesignIcons name='pluscircle' size={60} onPress={() => handleAddTask(task)}/>
                         </TouchableOpacity>
                 </View>
             </Modal>
@@ -128,11 +168,15 @@ function Homepage(props){
                     
                     <View style={styles.menuLists}>
                         <ScrollView>
-                        {lists.map((listName, index) => (
-                            <TouchableOpacity key={index} onPress={() => switchList(listName)}>
-                                <Text style={styles.listWrapper}>{listName}</Text>
-                            </TouchableOpacity>
-                        ))}
+                            <View style={styles.menuLists}>
+                                <ScrollView>
+                                    {lists.map((list) => (
+                                        <TouchableOpacity onPress={() => switchList(list.listName)}>
+                                            <Text style={styles.listWrapper}>{list.listName}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
                         </ScrollView>
                     </View>
                 </SafeAreaView>
@@ -175,14 +219,16 @@ function Homepage(props){
 
             <ScrollView>
                 {
-                    tasksByList[currentList] && tasksByList[currentList].map((task, index) => (
+                    lists.find(list => list.listName === currentList)?.tasks.map((task, index) => (
                         <Task
-                            text={task.text}
+                            text={task.taskName}
                             key={index}
                             index={index}
                             creationTime={moment(task.creationTime).fromNow()}
-                            setTaskItems={(newTaskItems) => setTasksByList(prevState => ({ ...prevState, [currentList]: newTaskItems }))}
-                            taskItems={tasksByList[currentList]}
+                            //setTaskItems={(newTaskItems) => setTasksByList(prevState => ({ ...prevState, [currentList]: newTaskItems }))}
+                            setTaskItems={(newTaskItems) => lists[getIndexOfList(currentList)].tasks = newTaskItems}
+                            //taskItems={tasksByList[currentList]}
+                            taskItems={lists[getIndexOfList(currentList)].tasks}
                         />
                     ))
                 }
