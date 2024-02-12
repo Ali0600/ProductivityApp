@@ -79,14 +79,11 @@ function Homepage(props){
         const newTask = {taskName: task, creationTime: currentTime.toDate(), list: currentList};
         lists[getIndexOfList(currentList)].tasks.push(newTask);
         await AsyncStorage.setItem('lists', JSON.stringify(lists));
-        //setLists(prevLists => [...prevLists, {listName: newTask.text, tasks: [...prevLists[getIndexOfList(currentList)].tasks, newTask.text]}]);
-        //setLists(prevLists => [...prevLists, {listName: currentList, tasks: [...prevLists[getIndexOfList()].tasks, newTask]}]);
         setModalVisible(false);
     }
 
     const addNewList = async (newListName) =>{
         switchList(newListName);
-        //loadLists();
         const newList = {listName: newListName, tasks: []};
         console.log("List Names: "+ lists[getIndexOfList(currentList)].listName);
         lists[getIndexOfList(currentList)].push(newList);
@@ -117,18 +114,6 @@ function Homepage(props){
         }));
         setLists([...lists, listName]);
         setTaskListVisible(false);
-    }*/
-
-    /*const handleAddTask =() => {
-        if (task){
-            const newTask = {text: task, creationTime: currentTime.toDate(), list: currentList};
-            setTasksByList(prevState => ({
-                ...prevState,
-                [currentList]: prevState[currentList] ? [...prevState[currentList], newTask].sort((a, b) => a.creationTime - b.creationTime) : [newTask]
-            }));  
-            setTask('');
-            setModalVisible(false);
-        }
     }*/
 
 
@@ -171,7 +156,7 @@ function Homepage(props){
                             <View style={styles.menuLists}>
                                 <ScrollView>
                                     {lists.map((list) => (
-                                        <TouchableOpacity onPress={() => switchList(list.listName)}>
+                                        <TouchableOpacity key={list.listName} onPress={() => switchList(list.listName)}>
                                             <Text style={styles.listWrapper}>{list.listName}</Text>
                                         </TouchableOpacity>
                                     ))}
