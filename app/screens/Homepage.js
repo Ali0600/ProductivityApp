@@ -9,13 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function Homepage(props){
     const [task, setTask] = useState('');
-//    const [creationTime, setCreationTime] = useState(new Date());
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(moment());
 
-    
     const [currentList, setCurrentList] = useState('Tasks');
     const [lists, setLists] = useState([
         {
@@ -53,8 +51,13 @@ function Homepage(props){
         const getLists = async () => {
             try {
                 const list = await AsyncStorage.getItem('lists');
+                const currList = await AsyncStorage.getItem('currentList');
+                console.log("List: "+ list);
                 if (list) {
                     setLists(JSON.parse(list));
+                }
+                if (currList) {
+                    setCurrentList(currList);
                 }
             } catch (error) {
                 console.error('Error getting lists from AsyncStorage:', error);
@@ -79,6 +82,7 @@ function Homepage(props){
         const newTask = {taskName: task, creationTime: currentTime.toDate(), list: currentList};
         lists[getIndexOfList(currentList)].tasks.push(newTask);
         await AsyncStorage.setItem('lists', JSON.stringify(lists));
+        await AsyncStorage.setItem('currentListIndex', JSON.stringify(getIndexOfList(currentList)));
         setModalVisible(false);
     }
 
@@ -91,31 +95,16 @@ function Homepage(props){
         await AsyncStorage.setItem('lists', JSON.stringify(lists));
     }
 
-    const switchList = (listName) => {
+    const switchList = async (listName) => {
         setCurrentList(listName);
+        await AsyncStorage.setItem('currentList', listName);
+        //setCurrentListIndex(getIndexOfList(listName));
         setMenuPanalVisible(false);
     }
 
     const getIndexOfList = () => {
         return lists.findIndex(list => list.listName === currentList);
     }
-
-    /*const switchList = (listName) => {
-        //clearAsyncStorage();
-        setCurrentList(listName);
-        setMenuPanalVisible(false);
-    }
-
-    const addNewList = (listName) => {
-        switchList(listName);
-        setTasksByList(prevState => ({
-            ...prevState,
-            [listName]: prevState[listName] ? prevState[listName]: []
-        }));
-        setLists([...lists, listName]);
-        setTaskListVisible(false);
-    }*/
-
 
     return(
         <View style={styles.container}>
@@ -203,7 +192,8 @@ function Homepage(props){
             </SafeAreaView>
 
             <ScrollView>
-                {
+                {[
+                    console.log("Current List: " + currentList),
                     lists.find(list => list.listName === currentList)?.tasks.map((task, index) => (
                         <Task
                             text={task.taskName}
@@ -214,9 +204,10 @@ function Homepage(props){
                             setTaskItems={(newTaskItems) => lists[getIndexOfList(currentList)].tasks = newTaskItems}
                             //taskItems={tasksByList[currentList]}
                             taskItems={lists[getIndexOfList(currentList)].tasks}
+                            currentListIndex={currentList}
                         />
                     ))
-                }
+                ]}
             </ScrollView>
 
             <View style={styles.buttonWrapper}>

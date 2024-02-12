@@ -2,17 +2,34 @@ import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Animated } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) =>{  
-    const handleLeftSwipe = () => {
-        const newTaskItems = [...taskItems];
-        const [swipedTask] = newTaskItems.splice(index, 1);
-        swipedTask.creationTime = new Date();
-        newTaskItems.push(swipedTask);
-        newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
-        setTaskItems(newTaskItems)
+/*const getIndexOfList = async () => {
+    const currentList = await AsyncStorage.getItem('currentList');
+    return lists.findIndex(list => list.listName === currentList);
+}*/
+const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe, onTaskItemsUpdated, currentListIndex}) =>{ 
+     
+    const handleLeftSwipe = async () => {
+
+        const listData = await AsyncStorage.getItem('lists');
+        const lists = JSON.parse(listData);
+        console.log("Lists: ", lists);
+        //const currentList = await AsyncStorage.getItem('currentList');
+        //const getIndexOfList = () => {
+          //  return lists.findIndex(list => list.listName === currentList);
+        //}
+        const [swipedTask] = lists[getIndexOfList()].splice(index, 1); 
+        //const newTaskItems = [...taskItems];
+        //console.log("New taskItems:" + newTaskItems[index].taskName);
+        //const [swipedTask] = newTaskItems.splice(index, 1);
+        //swipedTask.creationTime = new Date();
+        //newTaskItems.push(swipedTask);
+        //newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
+        //setTaskItems(newTaskItems);
         closeSwipe();
+        //onTaskItemsUpdated(newTaskItems);
         };
     return(
         <TouchableOpacity style={styles.completeBox} onPress={handleLeftSwipe}>
@@ -39,7 +56,7 @@ const RightSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) => {
     )
 }
 
-const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
+const Task = ({text, creationTime, index, setTaskItems, taskItems, currentListIndex}) => {
     const swipeableRef = useRef(null);
 
     const closeSwipe = () => {
@@ -55,7 +72,7 @@ const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
                     <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
                 )} 
                 renderLeftActions={() => (
-                    <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
+                    <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe} currentListIndex={currentListIndex}/>
                 )}>
                 <View style={styles.taskContainer}>
                     <Text>{text}</Text>
