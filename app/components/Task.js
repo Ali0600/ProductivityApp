@@ -4,51 +4,26 @@ import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
-/*const getIndexOfList = async () => {
-    const currentList = await AsyncStorage.getItem('currentList');
-    return lists.findIndex(list => list.listName === currentList);
-}*/
 const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) =>{ 
 
         
     const handleLeftSwipe = async () => {
 
-        console.log("New Task Items: ", taskItems);
         const listData = await AsyncStorage.getItem('lists');
         const lists = JSON.parse(listData);
-        //console.log("Lists: ", lists);
-        //const list = lists.find(list => list.listName === currentList);
-        //console.log("List: ", list[0].listName);
         const currentList = await AsyncStorage.getItem('currentList');
         const getIndexOfList = (currentList) => {
             return lists.findIndex(list => list.listName === currentList);
         }
-        console.log("Current List: ", currentList);
-        //const list = lists[getIndexOfList(currentList)].tasks;
-        //console.log("List: ", list);
         const newTaskItems = [...taskItems];
-        console.log("New Task Items: ", newTaskItems);
         const [swipedTask] = newTaskItems.splice(index, 1); 
-        console.log("Swiped Task: ", swipedTask);
         swipedTask.creationTime = new Date();
         newTaskItems.push(swipedTask);
         newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
-        //setTaskItems(newTaskItems);
-        console.log("New Task Items: ", newTaskItems);
         lists[getIndexOfList(currentList)].tasks = newTaskItems;
         await AsyncStorage.setItem('lists', JSON.stringify(lists));
-        //list.push(swipedTask);
-        //console.log("List after push: ", list);
-        //console.log("New taskItems:" + newTaskItems[index].taskName);
-        //const [swipedTask] = newTaskItems.splice(index, 1);
-        //swipedTask.creationTime = new Date();
-        //newTaskItems.push(swipedTask);
-        //newTaskItems.sort((a,b) => a.creationTim  e - b.creationTime);
         setTaskItems(newTaskItems);
-        console.log("New Task Items: ", taskItems);
         closeSwipe();
-        //onTaskItemsUpdated(newTaskItems);
         };
     return(
         <TouchableOpacity style={styles.completeBox} onPress={handleLeftSwipe}>
@@ -60,9 +35,20 @@ const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) =>{
 };
 
 const RightSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) => {
-    const handleRightSwipe = () =>{
+    const handleRightSwipe = async () =>{
+        const listData = await AsyncStorage.getItem('lists');
+        const lists = JSON.parse(listData);
+        const currentList = await AsyncStorage.getItem('currentList');
+        const getIndexOfList = (currentList) => {
+            return lists.findIndex(list => list.listName === currentList);
+        }
         const newTaskItems = [...taskItems];
+        console.log("newTaskItems", newTaskItems);
         newTaskItems.splice(index, 1);
+        console.log("newTaskItems", newTaskItems);
+        setTaskItems(newTaskItems);
+        lists[getIndexOfList(currentList)].tasks = newTaskItems;
+        await AsyncStorage.setItem('lists', JSON.stringify(lists));
         setTaskItems(newTaskItems);
         closeSwipe();
     }

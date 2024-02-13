@@ -70,21 +70,6 @@ function Homepage(props){
     }, []);
 
     useEffect(() => {
-        const getCurrentList = async () => {
-            try {
-                console.log("useEffect getCurrentList called");
-                const currList = await AsyncStorage.getItem('currentList');
-                if (currList) {
-                    setCurrentList(currList);
-                }
-            } catch (error) {
-                console.error('Error getting current list from AsyncStorage:', error);
-            }
-        };
-        getCurrentList();
-    }, [currentList]);
-
-    useEffect(() => {
         const saveLists = async () => {
             try {
                 console.log("Lists state saved to AsyncStorage.");
