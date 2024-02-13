@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "ProductivityApp",
-    "slug": "ProductivityApp",
-    "version": "1.0.0",
+    "name": "ADHD Habits",
+    "slug": "adhd-habits",
+    "version": "1.0.03",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./app/assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./app/assets/splash.png",
@@ -15,7 +15,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mhassan0600.adhd-habits"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +26,18 @@
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3301b407-d8a6-4018-bf3c-4f1db722f073"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e057b200-7670-4303-9e3e-69c68f0799bc"
+    },
+    "owner": "mhassan0600"
   }
 }
