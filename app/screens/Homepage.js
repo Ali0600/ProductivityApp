@@ -8,12 +8,12 @@ import moment from "moment";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function Homepage(props){
-    const [task, setTask] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(moment());
 
+    const [task, setTask] = useState('');
     const [currentList, setCurrentList] = useState('Tasks');
     const [lists, setLists] = useState([
         {
@@ -30,6 +30,7 @@ function Homepage(props){
         }
     ]);
 
+    //Used to clear AsyncStorage for testing purposes
     const clearAsyncStorage = async () => {
         try {
             await AsyncStorage.clear();
@@ -39,10 +40,11 @@ function Homepage(props){
         }
     };
 
+    //This useEffect is used to update the current time every 10 seconds
     useEffect(() => {
         const intervalId = setInterval(() => {
             setCurrentTime(moment());
-        }, 2000);
+        }, 10000);
 
         return() => clearInterval(intervalId);
     }, []);
@@ -50,9 +52,10 @@ function Homepage(props){
     useEffect(() => {
         const getLists = async () => {
             try {
+                console.log("useEffect getLists called");
                 const list = await AsyncStorage.getItem('lists');
+                console.log("TEST");
                 const currList = await AsyncStorage.getItem('currentList');
-                console.log("List: "+ list);
                 if (list) {
                     setLists(JSON.parse(list));
                 }
@@ -67,8 +70,24 @@ function Homepage(props){
     }, []);
 
     useEffect(() => {
+        const getCurrentList = async () => {
+            try {
+                console.log("useEffect getCurrentList called");
+                const currList = await AsyncStorage.getItem('currentList');
+                if (currList) {
+                    setCurrentList(currList);
+                }
+            } catch (error) {
+                console.error('Error getting current list from AsyncStorage:', error);
+            }
+        };
+        getCurrentList();
+    }, [currentList]);
+
+    useEffect(() => {
         const saveLists = async () => {
             try {
+                console.log("Lists state saved to AsyncStorage.");
                 await AsyncStorage.setItem('lists', JSON.stringify(lists));
             } catch (error) {
                 console.error('Error saving lists to AsyncStorage:', error);
@@ -76,30 +95,27 @@ function Homepage(props){
         };
         saveLists();
     }, [lists]);
-
-    //console.log("Task: "+ lists[getIndexOfList(currentList)].tasks[0].taskName);
+7
     const handleAddTask = async () => {
-        const newTask = {taskName: task, creationTime: currentTime.toDate(), list: currentList};
+        const newTask = {taskName: task, creationTime: currentTime.toDate()};
         lists[getIndexOfList(currentList)].tasks.push(newTask);
         await AsyncStorage.setItem('lists', JSON.stringify(lists));
         await AsyncStorage.setItem('currentListIndex', JSON.stringify(getIndexOfList(currentList)));
         setModalVisible(false);
     }
 
-    const addNewList = async (newListName) =>{
-        switchList(newListName);
-        const newList = {listName: newListName, tasks: []};
-        console.log("List Names: "+ lists[getIndexOfList(currentList)].listName);
-        lists[getIndexOfList(currentList)].push(newList);
-        console.log("List Names: "+ lists[getIndexOfList(currentList)].listName);
-        await AsyncStorage.setItem('lists', JSON.stringify(lists));
-    }
-
     const switchList = async (listName) => {
+        //clearAsyncStorage();
         setCurrentList(listName);
         await AsyncStorage.setItem('currentList', listName);
-        //setCurrentListIndex(getIndexOfList(listName));
         setMenuPanalVisible(false);
+    }
+
+    const addNewList = async (newListName) =>{
+        const newList = {listName: newListName, tasks: []};
+        switchList(newListName);
+        lists.push(newList);
+        await AsyncStorage.setItem('lists', JSON.stringify(lists));
     }
 
     const getIndexOfList = () => {
@@ -193,7 +209,7 @@ function Homepage(props){
 
             <ScrollView>
                 {[
-                    console.log("Current List: " + currentList),
+                    //console.log("Current List: " + currentList),
                     lists.find(list => list.listName === currentList)?.tasks.map((task, index) => (
                         <Task
                             text={task.taskName}
