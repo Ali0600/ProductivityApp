@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList } from "react-native";
 import Task from "../components/Task";
+import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
 import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
@@ -80,13 +81,23 @@ function Homepage(props){
         };
         saveLists();
     }, [lists]);
-7
+
+    const handleTaskItemsUpdate = async (newLists) => {
+        try {
+            await AsyncStorage.setItem('lists', JSON.stringify(newLists));
+            setLists([...newLists]); // Updating state with a new array reference
+        } catch (error) {
+            console.error('Error updating task items:', error);
+        }
+    };
+
     const handleAddTask = async () => {
         const newTask = {taskName: task, creationTime: currentTime.toDate()};
         lists[getIndexOfList(currentList)].tasks.push(newTask);
         await AsyncStorage.setItem('lists', JSON.stringify(lists));
         await AsyncStorage.setItem('currentListIndex', JSON.stringify(getIndexOfList(currentList)));
         setModalVisible(false);
+        //clearAsyncStorage();
     }
 
     const switchList = async (listName) => {
@@ -97,6 +108,8 @@ function Homepage(props){
     }
 
     const addNewList = async (newListName) =>{
+        setTaskListVisible(false);
+        //clearAsyncStorage();
         const newList = {listName: newListName, tasks: []};
         switchList(newListName);
         lists.push(newList);
@@ -141,7 +154,7 @@ function Homepage(props){
                         <AntDesignIcons name='pluscircle' size={40} onPress={() => setTaskListVisible(true)}/>
                     </View>
                     
-                    <View style={styles.menuLists}>
+                    {/*<View style={styles.menuLists}>
                         <ScrollView>
                             <View style={styles.menuLists}>
                                 <ScrollView>
@@ -152,6 +165,19 @@ function Homepage(props){
                                     ))}
                                 </ScrollView>
                             </View>
+                        </ScrollView>
+                                </View>*/}
+                    <View style={styles.menuLists}>
+                        <ScrollView>
+                            {lists.map((list, index) => (
+                                <TouchableOpacity key={index} onPress={() => switchList(list.listName)}>
+                                    <List
+                                        text={list.listName}
+                                        setTaskItems={(newTaskItems) => lists[index].tasks = newTaskItems}
+                                        handleTaskItemsUpdate={handleTaskItemsUpdate}
+                                    />
+                                </TouchableOpacity>
+                            ))}
                         </ScrollView>
                     </View>
                 </SafeAreaView>
