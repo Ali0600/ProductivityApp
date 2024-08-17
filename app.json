@@ -2,7 +2,7 @@
   "expo": {
     "name": "ADHD Habits",
     "slug": "adhd-habits",
-    "version": "1.0.03",
+    "version": "1.0.06",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -36,7 +36,7 @@
       "policy": "sdkVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/e057b200-7670-4303-9e3e-69c68f0799bc"
+      "url": "https://u.expo.dev/3301b407-d8a6-4018-bf3c-4f1db722f073"
     },
     "owner": "mhassan0600"
   }
