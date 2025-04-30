@@ -29,7 +29,7 @@ const RightSwipeComponent = ({index, text, setTaskItems, taskItems, closeSwipe, 
     )
 }
 
-const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate, drag, isActive }) => {
+const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate, drag, isActive, onListPress }) => {
     const swipeableRef = useRef(null);
 
     const closeSwipe = () => {
@@ -38,14 +38,29 @@ const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate, drag
         }
     }
 
+    const handlePress = () => {
+        if (onListPress) {
+            console.log("List pressed:", text);
+            onListPress();
+        }
+    };
+
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <Swipeable ref={swipeableRef}
                 renderRightActions={() => (
                     <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe} text={text} handleTaskItemsUpdate={handleTaskItemsUpdate}/>
                 )}>
-                <TouchableOpacity onLongPress={drag} style={[styles.listContainer, isActive && styles.activeItem]}>
-                    <Text>{text}</Text>
+                <TouchableOpacity 
+                    onLongPress={drag} 
+                    onPress={handlePress}
+                    activeOpacity={0.7}
+                    style={[styles.listContainer, isActive && styles.activeItem]}
+                >
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <View style={styles.dragHandle} />
+                        <Text>{text}</Text>
+                    </View>
                 </TouchableOpacity>
             </Swipeable>
         </GestureHandlerRootView>
@@ -81,6 +96,13 @@ const styles = StyleSheet.create({
         backgroundColor: "black",
         flex: 1,
     },
+    dragHandle: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        marginRight: 10,
+        backgroundColor: '#CCCCCC',
+    }
 })
 
 export default List;

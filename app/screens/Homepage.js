@@ -62,6 +62,7 @@ function Homepage(props){
                     setLists(JSON.parse(list));
                 }
                 if (currList) {
+                    console.log("Setting current list to:", currList);
                     setCurrentList(currList);
                 }
             } catch (error) {
@@ -103,6 +104,7 @@ function Homepage(props){
 
     const switchList = async (listName) => {
         //clearAsyncStorage();
+        console.log("Switching to list:", listName);
         setCurrentList(listName);
         await AsyncStorage.setItem('currentList', listName);
         setMenuPanalVisible(false);
@@ -118,7 +120,9 @@ function Homepage(props){
     }
 
     const getIndexOfList = () => {
-        return lists.findIndex(list => list.listName === currentList);
+        const index = lists.findIndex(list => list.listName === currentList);
+        console.log("Found list index:", index, "for current list:", currentList);
+        return index;
     }
 
     return(
@@ -178,16 +182,15 @@ function Homepage(props){
                             }}
                             renderItem={({ item, drag, isActive, index }) => (
                                 <ScaleDecorator>
-                                    <TouchableOpacity onPress={() => switchList(item.listName)}>
-                                        <List
-                                            text={item.listName}
-                                            index={index}
-                                            setTaskItems={(newTaskItems) => lists[index].tasks = newTaskItems}
-                                            handleTaskItemsUpdate={handleTaskItemsUpdate}
-                                            drag={drag}
-                                            isActive={isActive}
-                                        />
-                                    </TouchableOpacity>
+                                    <List
+                                        text={item.listName}
+                                        index={index}
+                                        setTaskItems={(newTaskItems) => lists[index].tasks = newTaskItems}
+                                        handleTaskItemsUpdate={handleTaskItemsUpdate}
+                                        drag={drag}
+                                        isActive={isActive}
+                                        onListPress={() => switchList(item.listName)}
+                                    />
                                 </ScaleDecorator>
                             )}
                         />
@@ -231,22 +234,30 @@ function Homepage(props){
             </SafeAreaView>
 
             <ScrollView>
-                {[
-                    //console.log("Current List: " + currentList),
-                    lists.find(list => list.listName === currentList)?.tasks.map((task, index) => (
-                        <Task
-                            text={task.taskName}
-                            key={index}
-                            index={index}
-                            creationTime={moment(task.creationTime).fromNow()}
-                            //setTaskItems={(newTaskItems) => setTasksByList(prevState => ({ ...prevState, [currentList]: newTaskItems }))}
-                            setTaskItems={(newTaskItems) => lists[getIndexOfList(currentList)].tasks = newTaskItems}
-                            //taskItems={tasksByList[currentList]}
-                            taskItems={lists[getIndexOfList(currentList)].tasks}
-                            currentListIndex={currentList}
-                        />
-                    ))
-                ]}
+                {(() => {
+                    console.log("Rendering tasks for current list:", currentList);
+                    const currentListObj = lists.find(list => list.listName === currentList);
+                    if (currentListObj && currentListObj.tasks && currentListObj.tasks.length > 0) {
+                        return currentListObj.tasks.map((task, index) => (
+                            <Task
+                                text={task.taskName}
+                                key={index}
+                                index={index}
+                                creationTime={moment(task.creationTime).fromNow()}
+                                setTaskItems={(newTaskItems) => {
+                                    const listIndex = getIndexOfList();
+                                    if (listIndex !== -1) {
+                                        lists[listIndex].tasks = newTaskItems;
+                                    }
+                                }}
+                                taskItems={currentListObj.tasks}
+                                currentListIndex={currentList}
+                            />
+                        ));
+                    } else {
+                        return <Text style={{color: 'white', padding: 20, textAlign: 'center'}}>No tasks in this list</Text>;
+                    }
+                })()}
             </ScrollView>
 
             <View style={styles.buttonWrapper}>
