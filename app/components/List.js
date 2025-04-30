@@ -29,7 +29,7 @@ const RightSwipeComponent = ({index, text, setTaskItems, taskItems, closeSwipe, 
     )
 }
 
-const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate }) => {
+const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate, drag, isActive }) => {
     const swipeableRef = useRef(null);
 
     const closeSwipe = () => {
@@ -44,9 +44,9 @@ const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate }) =>
                 renderRightActions={() => (
                     <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe} text={text} handleTaskItemsUpdate={handleTaskItemsUpdate}/>
                 )}>
-                <View style={styles.listContainer}>
+                <TouchableOpacity onLongPress={drag} style={[styles.listContainer, isActive && styles.activeItem]}>
                     <Text>{text}</Text>
-                </View>
+                </TouchableOpacity>
             </Swipeable>
         </GestureHandlerRootView>
     );
@@ -61,6 +61,17 @@ const styles = StyleSheet.create({
         borderColor: "black",
         textAlign: 'center',
         justifyContent: "space-between"
+    },
+    activeItem: {
+        backgroundColor: "#E8E8E8",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     deleteBox: {
         backgroundColor: "red",

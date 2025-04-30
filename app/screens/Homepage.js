@@ -7,6 +7,7 @@ import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -168,17 +169,28 @@ function Homepage(props){
                         </ScrollView>
                                 </View>*/}
                     <View style={styles.menuLists}>
-                        <ScrollView>
-                            {lists.map((list, index) => (
-                                <TouchableOpacity key={index} onPress={() => switchList(list.listName)}>
-                                    <List
-                                        text={list.listName}
-                                        setTaskItems={(newTaskItems) => lists[index].tasks = newTaskItems}
-                                        handleTaskItemsUpdate={handleTaskItemsUpdate}
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
+                        <DraggableFlatList
+                            data={lists}
+                            keyExtractor={(item) => item.listName}
+                            onDragEnd={({ data }) => {
+                                setLists(data);
+                                AsyncStorage.setItem('lists', JSON.stringify(data));
+                            }}
+                            renderItem={({ item, drag, isActive, index }) => (
+                                <ScaleDecorator>
+                                    <TouchableOpacity onPress={() => switchList(item.listName)}>
+                                        <List
+                                            text={item.listName}
+                                            index={index}
+                                            setTaskItems={(newTaskItems) => lists[index].tasks = newTaskItems}
+                                            handleTaskItemsUpdate={handleTaskItemsUpdate}
+                                            drag={drag}
+                                            isActive={isActive}
+                                        />
+                                    </TouchableOpacity>
+                                </ScaleDecorator>
+                            )}
+                        />
                     </View>
                 </SafeAreaView>
 
