@@ -1,56 +1,57 @@
-import { useEffect, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import { useRef } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLists } from '../hooks/useAppState';
 
 
-const RightSwipeComponent = ({index, text, setTaskItems, taskItems, closeSwipe, handleTaskItemsUpdate}) => {
-    const handleRightSwipe = async () =>{
-        console.log("HELLO");
-
-        const listData = await AsyncStorage.getItem('lists');
-        const lists = JSON.parse(listData);
-        const getIndexOfList = (text) => {
-            return lists.findIndex(list => list.listName === text);
-        }
-        lists.splice(getIndexOfList(text), 1);
-        await AsyncStorage.setItem('lists', JSON.stringify(lists));
-        handleTaskItemsUpdate(lists);
+const RightSwipeComponent = ({ listName, closeSwipe }) => {
+    // Use our custom hook to access list operations
+    const { removeList } = useLists();
+    
+    const handleRightSwipe = () => {
+        // Remove the list
+        removeList(listName);
         closeSwipe();
-
-    }
-    return(
+    };
+    
+    return (
         <TouchableOpacity style={styles.deleteBox} onPress={handleRightSwipe}>
             <View>
                 <Text>Delete</Text>
             </View>
         </TouchableOpacity>
-    )
+    );
 }
 
-const List = ({text, index, setTaskItems, taskItems, handleTaskItemsUpdate, drag, isActive, onListPress }) => {
+const List = ({ text, index, drag, isActive, onListPress }) => {
     const swipeableRef = useRef(null);
-
+    // Use text as the list name
+    const listName = text;
+    
     const closeSwipe = () => {
-        if(swipeableRef.current){
+        if (swipeableRef.current) {
             swipeableRef.current.close();
         }
-    }
+    };
 
     const handlePress = () => {
         if (onListPress) {
-            console.log("List pressed:", text);
             onListPress();
         }
     };
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <Swipeable ref={swipeableRef}
+            <Swipeable 
+                ref={swipeableRef}
                 renderRightActions={() => (
-                    <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe} text={text} handleTaskItemsUpdate={handleTaskItemsUpdate}/>
-                )}>
+                    <RightSwipeComponent 
+                        listName={listName} 
+                        closeSwipe={closeSwipe}
+                    />
+                )}
+            >
                 <TouchableOpacity 
                     onLongPress={drag} 
                     onPress={handlePress}

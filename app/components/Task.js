@@ -1,84 +1,115 @@
-import { useEffect, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import { useRef, useEffect } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useListTasks } from '../hooks/useAppState';
 
-const LeftSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) =>{ 
+// Delete these component definitions as we're now implementing the functionality directly in the Task component
 
-        
-    const handleLeftSwipe = async () => {
-
-        const listData = await AsyncStorage.getItem('lists');
-        const lists = JSON.parse(listData);
-        const currentList = await AsyncStorage.getItem('currentList');
-        const getIndexOfList = (currentList) => {
-            return lists.findIndex(list => list.listName === currentList);
-        }
-        const newTaskItems = [...taskItems];
-        const [swipedTask] = newTaskItems.splice(index, 1); 
-        swipedTask.creationTime = new Date();
-        newTaskItems.push(swipedTask);
-        newTaskItems.sort((a,b) => a.creationTime - b.creationTime);
-        lists[getIndexOfList(currentList)].tasks = newTaskItems;
-        await AsyncStorage.setItem('lists', JSON.stringify(lists));
-        setTaskItems(newTaskItems);
-        closeSwipe();
-        };
-    return(
-        <TouchableOpacity style={styles.completeBox} onPress={handleLeftSwipe}>
-            <View>
-                <Text>Complete</Text>
-            </View>
-        </TouchableOpacity>
-    );    
-};
-
-const RightSwipeComponent = ({index, setTaskItems, taskItems, closeSwipe}) => {
-    const handleRightSwipe = async () =>{
-        const listData = await AsyncStorage.getItem('lists');
-        const lists = JSON.parse(listData);
-        const currentList = await AsyncStorage.getItem('currentList');
-        const getIndexOfList = (currentList) => {
-            return lists.findIndex(list => list.listName === currentList);
-        }
-        const newTaskItems = [...taskItems];
-        console.log("newTaskItems", newTaskItems);
-        newTaskItems.splice(index, 1);
-        console.log("newTaskItems", newTaskItems);
-        setTaskItems(newTaskItems);
-        lists[getIndexOfList(currentList)].tasks = newTaskItems;
-        await AsyncStorage.setItem('lists', JSON.stringify(lists));
-        setTaskItems(newTaskItems);
-        closeSwipe();
-    }
-    return(
-        <TouchableOpacity style={styles.deleteBox} onPress={handleRightSwipe}>
-            <View>
-                <Text>Delete</Text>
-            </View>
-        </TouchableOpacity>
-    )
-}
-
-const Task = ({text, creationTime, index, setTaskItems, taskItems}) => {
+const Task = ({ text, creationTime, index, currentListName, taskId }) => {
     const swipeableRef = useRef(null);
+    // Use our custom hook to access task operations for the specified list
+    const { 
+        tasks, 
+        removeTaskFromList,
+        removeTaskFromListByIndex, 
+        updateTaskInList, 
+        completeTaskInList,
+        completeTaskInListByIndex 
+    } = useListTasks(currentListName);
+    
+    // If taskId is not provided, create a fallback ID
+    const actualTaskId = taskId || `${text}-${index}`;
+    
+    console.log("Task component received:", { 
+        text, 
+        index, 
+        currentListName, 
+        taskId: actualTaskId 
+    });
+    
+    // For debugging - show when component mounts
+    useEffect(() => {
+        console.log(`Task mounted: ${text} with ID: ${actualTaskId}`);
+        return () => console.log(`Task unmounted: ${text} with ID: ${actualTaskId}`);
+    }, []);
 
     const closeSwipe = () => {
-        if(swipeableRef.current){
+        if (swipeableRef.current) {
             swipeableRef.current.close();
         }
-    }
+    };
+    
+    const handleRemove = () => {
+        Alert.alert(
+            "Delete Task",
+            `Are you sure you want to delete "${text}"?`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                    onPress: closeSwipe
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                        console.log("Removing task at index:", index);
+                        // Use the index-based approach which is more reliable
+                        removeTaskFromListByIndex(index);
+                        console.log("Remove task by index function called");
+                        closeSwipe();
+                    }
+                }
+            ]
+        );
+    };
+    
+    const handleComplete = () => {
+        // Display an alert to make it clear what's happening
+        Alert.alert(
+            "Complete Task",
+            `Marking "${text}" as complete and moving to bottom of list`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                    onPress: closeSwipe
+                },
+                {
+                    text: "Complete",
+                    style: "default",
+                    onPress: () => {
+                        console.log("Marking task as complete with index:", index);
+                        // Use the index-based approach which is more reliable
+                        completeTaskInListByIndex(index);
+                        console.log("Complete task by index function called");
+                        closeSwipe();
+                    }
+                }
+            ]
+        );
+    };
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <Swipeable ref={swipeableRef}
+            <Swipeable 
+                ref={swipeableRef}
                 renderRightActions={() => (
-                    <RightSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
+                    <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
+                        <View>
+                            <Text style={styles.actionText}>Delete</Text>
+                        </View>
+                    </TouchableOpacity>
                 )} 
                 renderLeftActions={() => (
-                    <LeftSwipeComponent index={index} setTaskItems={setTaskItems} taskItems={taskItems} closeSwipe={closeSwipe}/>
-                )}>
+                    <TouchableOpacity style={styles.completeBox} onPress={handleComplete}>
+                        <View>
+                            <Text style={styles.actionText}>Complete</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+            >
                 <View style={styles.taskContainer}>
                     <Text>{text}</Text>
                     <Text>{creationTime.toString()}</Text>
@@ -100,11 +131,21 @@ const styles = StyleSheet.create({
     },
     deleteBox: {
         backgroundColor: "red",
-        flex: 0.2
+        flex: 0.2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20
     },
     completeBox: {
         backgroundColor: "green",
-
+        flex: 0.2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20
+    },
+    actionText: {
+        color: 'white',
+        fontWeight: 'bold'
     }
 })
 

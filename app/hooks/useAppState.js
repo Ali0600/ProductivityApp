@@ -24,9 +24,12 @@ export const useListTasks = (listName) => {
   const { 
     lists, 
     addTask, 
-    removeTask, 
+    removeTask,
+    removeTaskByIndex, 
     updateTask, 
-    reorderTasks 
+    reorderTasks,
+    completeTask,
+    completeTaskByIndex
   } = useAppState();
   
   // Find the specified list
@@ -36,15 +39,21 @@ export const useListTasks = (listName) => {
   // Task management functions
   const addTaskToList = (task) => addTask(listName, task);
   const removeTaskFromList = (taskId) => removeTask(listName, taskId);
+  const removeTaskFromListByIndex = (index) => removeTaskByIndex(listName, index);
   const updateTaskInList = (taskId, updates) => updateTask(listName, taskId, updates);
   const reorderTasksInList = (reorderedTasks) => reorderTasks(listName, reorderedTasks);
+  const completeTaskInList = (taskId) => completeTask(listName, taskId);
+  const completeTaskInListByIndex = (index) => completeTaskByIndex(listName, index);
   
   return {
     tasks,
     addTaskToList,
     removeTaskFromList,
+    removeTaskFromListByIndex,
     updateTaskInList,
     reorderTasksInList,
+    completeTaskInList,
+    completeTaskInListByIndex,
   };
 };
 
@@ -55,20 +64,22 @@ export const useListTasks = (listName) => {
 export const useLists = () => {
   const { 
     lists, 
-    currentList, 
-    getCurrentListData,
+    currentList,
+    currentListData,
     addList, 
     removeList, 
-    switchList 
+    switchList,
+    updateLists
   } = useAppState();
   
   return {
     lists,
     currentList,
-    currentListData: getCurrentListData(),
+    currentListData,
     addList,
     removeList,
     switchList,
+    updateLists
   };
 };
 

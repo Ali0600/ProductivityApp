@@ -13,8 +13,11 @@ export default class StorageService {
    */
   static async getData(key, defaultValue = null) {
     try {
+      console.log(`Getting data for key: ${key}`);
       const jsonValue = await AsyncStorage.getItem(key);
-      return jsonValue != null ? JSON.parse(jsonValue) : defaultValue;
+      const result = jsonValue != null ? JSON.parse(jsonValue) : defaultValue;
+      console.log(`Retrieved data for ${key}:`, result);
+      return result;
     } catch (error) {
       console.error(`Error reading ${key} from storage:`, error);
       return defaultValue;
@@ -29,6 +32,7 @@ export default class StorageService {
    */
   static async storeData(key, value) {
     try {
+      console.log(`Storing data for key: ${key}`, value);
       const jsonValue = JSON.stringify(value);
       await AsyncStorage.setItem(key, jsonValue);
       return true;
@@ -49,6 +53,21 @@ export default class StorageService {
       return true;
     } catch (error) {
       console.error(`Error removing ${key} from storage:`, error);
+      return false;
+    }
+  }
+  
+  /**
+   * Clear all data (for debugging)
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async clearAll() {
+    try {
+      await AsyncStorage.clear();
+      console.log('Storage cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('Error clearing storage:', error);
       return false;
     }
   }
