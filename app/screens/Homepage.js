@@ -1,48 +1,28 @@
 import { useEffect, useState } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
 import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DraggableFlatList from 'react-native-draggable-flatlist';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { useAppState, useLists, useListTasks, useAppLoading } from '../hooks/useAppState';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(moment());
-
     const [task, setTask] = useState('');
-    const [currentList, setCurrentList] = useState('Tasks');
-    const [lists, setLists] = useState([
-        {
-            listName: 'Tasks',
-            tasks: [
-                {taskName: "PushUps", creationTime: currentTime.toDate()},
-            ]
-        },
-        {
-            listName: 'Daily Habits',
-            tasks: [
-                {taskName: "Learn German", creationTime: currentTime.toDate()},
-            ]
-        }
-    ]);
+    const [newListName, setNewListName] = useState('');
+    
+    // Use our custom hooks
+    const { isLoading, error } = useAppLoading();
+    const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
+    const { addTaskToList, reorderTasksInList } = useListTasks(currentList);
 
-    //Used to clear AsyncStorage for testing purposes
-    const clearAsyncStorage = async () => {
-        try {
-            await AsyncStorage.clear();
-            console.log('AsyncStorage cleared successfully.');
-        } catch (error) {
-            console.error('Error clearing AsyncStorage:', error);
-        }
-    };
-
-    //This useEffect is used to update the current time every 10 seconds
+    // This useEffect is used to update the current time every 10 seconds
     useEffect(() => {
         const intervalId = setInterval(() => {
             setCurrentTime(moment());
@@ -51,204 +31,200 @@ function Homepage(props){
         return() => clearInterval(intervalId);
     }, []);
 
-    useEffect(() => {
-        const getLists = async () => {
-            try {
-                console.log("useEffect getLists called");
-                const list = await AsyncStorage.getItem('lists');
-                console.log("TEST");
-                const currList = await AsyncStorage.getItem('currentList');
-                if (list) {
-                    setLists(JSON.parse(list));
-                }
-                if (currList) {
-                    setCurrentList(currList);
-                }
-            } catch (error) {
-                console.error('Error getting lists from AsyncStorage:', error);
-            }
+    const handleAddTask = () => {
+        if (!task.trim()) return;
+        
+        const newTask = {
+            id: `task-${Date.now()}`, // Create a reliable unique ID
+            taskName: task, 
+            creationTime: currentTime.toDate()
         };
-        getLists();
-    }, []);
-
-    useEffect(() => {
-        const saveLists = async () => {
-            try {
-                console.log("Lists state saved to AsyncStorage.");
-                await AsyncStorage.setItem('lists', JSON.stringify(lists));
-            } catch (error) {
-                console.error('Error saving lists to AsyncStorage:', error);
-            }
-        };
-        saveLists();
-    }, [lists]);
-
-    const handleTaskItemsUpdate = async (newLists) => {
-        try {
-            await AsyncStorage.setItem('lists', JSON.stringify(newLists));
-            setLists([...newLists]); // Updating state with a new array reference
-        } catch (error) {
-            console.error('Error updating task items:', error);
-        }
+        
+        console.log("Adding new task:", newTask);
+        addTaskToList(newTask);
+        setTask(''); // Clear input
+        setModalVisible(false);
     };
 
-    const handleAddTask = async () => {
-        const newTask = {taskName: task, creationTime: currentTime.toDate()};
-        lists[getIndexOfList(currentList)].tasks.push(newTask);
-        await AsyncStorage.setItem('lists', JSON.stringify(lists));
-        await AsyncStorage.setItem('currentListIndex', JSON.stringify(getIndexOfList(currentList)));
-        setModalVisible(false);
-        //clearAsyncStorage();
-    }
-
-    const switchList = async (listName) => {
-        //clearAsyncStorage();
-        setCurrentList(listName);
-        await AsyncStorage.setItem('currentList', listName);
+    const handleSwitchList = (listName) => {
+        switchList(listName);
         setMenuPanalVisible(false);
-    }
+    };
+    
+    const handleReorderLists = (reorderedLists) => {
+        console.log("Handling list reorder:", reorderedLists.map(l => l.listName));
+        // Update the entire lists array in the context
+        updateLists(reorderedLists);
+    };
 
-    const addNewList = async (newListName) =>{
+    const handleAddNewList = () => {
+        if (!newListName.trim()) return;
+        
+        addList(newListName);
+        setNewListName(''); // Clear input
         setTaskListVisible(false);
-        //clearAsyncStorage();
-        const newList = {listName: newListName, tasks: []};
-        switchList(newListName);
-        lists.push(newList);
-        await AsyncStorage.setItem('lists', JSON.stringify(lists));
-    }
-
-    const getIndexOfList = () => {
-        return lists.findIndex(list => list.listName === currentList);
-    }
+    };
 
     return(
         <View style={styles.container}>
-
-            <Modal visible={modalVisible} animationType="slide" transparent={true}> 
-                <View style={styles.modalContent}>
-                    <TextInput
-                            style={styles.inputForms}
-                            onChangeText={text => setTask(text)}
-                            placeholder={'Task Name'}
-                            value={props.task}
-                    />
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#0000ff" />
+                    <Text style={styles.loadingText}>Loading...</Text>
                 </View>
-
-                <View style={styles.buttonWrapper}>
-                        <TouchableOpacity>
-                            <AntDesignIcons name='minuscircle' size={60} onPress={() => setModalVisible(false) }/>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity >
-                            <AntDesignIcons name='pluscircle' size={60} onPress={() => handleAddTask(task)}/>
-                        </TouchableOpacity>
+            ) : error ? (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Error: {error}</Text>
                 </View>
-            </Modal>
+            ) : (
+                <>
+                    <Modal visible={modalVisible} animationType="slide" transparent={true}> 
+                        <View style={styles.modalContent}>
+                            <TextInput
+                                style={styles.inputForms}
+                                onChangeText={text => setTask(text)}
+                                placeholder={'Task Name'}
+                                value={task}
+                            />
+                        </View>
 
-            <Modal visible={menuVisible} animationType="slide" transparent={true}>
-                <SafeAreaView style={styles.menuContainer}>
-                    <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
-                        <AntDesignIcons name='closecircle' size={40} backgroundColor='white' onPress={()=> setMenuPanalVisible(false)}/>
+                        <View style={styles.buttonWrapper}>
+                            <TouchableOpacity>
+                                <AntDesignIcons name='minuscircle' size={60} onPress={() => setModalVisible(false) }/>
+                            </TouchableOpacity>
 
-                        <Text backgroundColor="yellow">Lists</Text>
+                            <TouchableOpacity>
+                                <AntDesignIcons name='pluscircle' size={60} onPress={handleAddTask}/>
+                            </TouchableOpacity>
+                        </View>
+                    </Modal>
 
-                        <AntDesignIcons name='pluscircle' size={40} onPress={() => setTaskListVisible(true)}/>
-                    </View>
-                    
-                    {/*<View style={styles.menuLists}>
-                        <ScrollView>
-                            <View style={styles.menuLists}>
-                                <ScrollView>
-                                    {lists.map((list) => (
-                                        <TouchableOpacity key={list.listName} onPress={() => switchList(list.listName)}>
-                                            <Text style={styles.listWrapper}>{list.listName}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
+                    <Modal visible={menuVisible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={styles.menuContainer}>
+                            <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
+                                <AntDesignIcons 
+                                    name='closecircle' 
+                                    size={40} 
+                                    backgroundColor='white' 
+                                    onPress={() => setMenuPanalVisible(false)}
+                                />
+
+                                <Text backgroundColor="yellow">Lists</Text>
+
+                                <AntDesignIcons 
+                                    name='pluscircle' 
+                                    size={40} 
+                                    onPress={() => setTaskListVisible(true)}
+                                />
                             </View>
-                        </ScrollView>
-                                </View>*/}
-                    <View style={styles.menuLists}>
-                        <ScrollView>
-                            {lists.map((list, index) => (
-                                <TouchableOpacity key={index} onPress={() => switchList(list.listName)}>
-                                    <List
-                                        text={list.listName}
-                                        setTaskItems={(newTaskItems) => lists[index].tasks = newTaskItems}
-                                        handleTaskItemsUpdate={handleTaskItemsUpdate}
+                            
+                            <View style={styles.menuLists}>
+                                <DraggableFlatList
+                                    data={lists}
+                                    keyExtractor={(item) => item.listName}
+                                    onDragEnd={({ data }) => {
+                                        console.log("Reordering lists:", data.map(l => l.listName));
+                                        // Update the lists state directly in context
+                                        // We need to add a function to handle this
+                                        handleReorderLists(data);
+                                    }}
+                                    renderItem={({ item, drag, isActive, index }) => (
+                                        <ScaleDecorator>
+                                            <List
+                                                text={item.listName}
+                                                index={index}
+                                                drag={drag}
+                                                isActive={isActive}
+                                                onListPress={() => handleSwitchList(item.listName)}
+                                            />
+                                        </ScaleDecorator>
+                                    )}
+                                />
+                            </View>
+                        </SafeAreaView>
+
+                        <Modal visible={taskListVisible} animationType="slide" transparent={true}>
+                            <View style={styles.taskListModal}>
+                                <TextInput
+                                    style={styles.inputForms}
+                                    onChangeText={text => setNewListName(text)}
+                                    value={newListName}
+                                    placeholder={'Task List Name'}
+                                />
+                            </View>
+
+                            <View style={styles.buttonWrapper}>
+                                <TouchableOpacity>
+                                    <AntDesignIcons 
+                                        name='minuscircle' 
+                                        size={60} 
+                                        onPress={() => setTaskListVisible(false)}
                                     />
                                 </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </SafeAreaView>
 
-                <Modal visible={taskListVisible} animationType="slide" transparent={true}>
-                    <View style={styles.taskListModal}>
-                        <TextInput
-                                style={styles.inputForms}
-                                onChangeText={text => setCurrentList(text)}
-                                placeholder={'Task List Name'}
-                                //value={listName}
-                        />
-                    </View>
+                                <TouchableOpacity>
+                                    <AntDesignIcons 
+                                        name='pluscircle' 
+                                        size={60} 
+                                        onPress={handleAddNewList}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </Modal>
+                    </Modal>
+
+                    <SafeAreaView style={styles.productName}>
+                        <View flexDirection="row" justifyContent="space-between">
+                            <TouchableOpacity>
+                               <EntypoIcons name='menu' size={40} onPress={() => setMenuPanalVisible(true)}/>
+                            </TouchableOpacity>
+
+                            <Text style={styles.textFont}>ADHDone</Text>
+
+                            <TouchableOpacity>
+                               <FeatherIcons name='settings' size={40}/>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+
+                    <ScrollView>
+                        {currentListData && currentListData.tasks && currentListData.tasks.length > 0 ? (
+                            currentListData.tasks.map((task, index) => {
+                                console.log("Rendering task:", task);
+                                const taskId = task.id || `task-${currentList}-${index}`;
+                                console.log("Using taskId:", taskId);
+                                
+                                return (
+                                    <Task
+                                        text={task.taskName}
+                                        key={taskId}
+                                        index={index}
+                                        taskId={taskId}
+                                        creationTime={moment(task.creationTime).fromNow()}
+                                        currentListName={currentList}
+                                    />
+                                );
+                            })
+                        ) : (
+                            <Text style={{color: 'white', padding: 20, textAlign: 'center'}}>
+                                No tasks in this list
+                            </Text>
+                        )}
+                    </ScrollView>
 
                     <View style={styles.buttonWrapper}>
                         <TouchableOpacity>
-                            <AntDesignIcons name='minuscircle' size={60} onPress={() => setTaskListVisible(false) }/>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity >
-                            <AntDesignIcons name='pluscircle' size={60} onPress={() => addNewList(currentList)}/>
+                            <AntDesignIcons 
+                                name='pluscircle' 
+                                size={60} 
+                                onPress={() => setModalVisible(true)}
+                            />
                         </TouchableOpacity>
                     </View>
-                </Modal>
-            </Modal>
 
-            <SafeAreaView style={styles.productName}>
-                <View flexDirection="row" justifyContent="space-between">
-                    <TouchableOpacity>
-                       <EntypoIcons name='menu' size={40} onPress={() => setMenuPanalVisible(true)}/>
-                    </TouchableOpacity>
-
-                    <Text style={styles.textFont}>ADHDone</Text>
-
-                    <TouchableOpacity>
-                       <FeatherIcons name='settings' size={40}/>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-
-            <ScrollView>
-                {[
-                    //console.log("Current List: " + currentList),
-                    lists.find(list => list.listName === currentList)?.tasks.map((task, index) => (
-                        <Task
-                            text={task.taskName}
-                            key={index}
-                            index={index}
-                            creationTime={moment(task.creationTime).fromNow()}
-                            //setTaskItems={(newTaskItems) => setTasksByList(prevState => ({ ...prevState, [currentList]: newTaskItems }))}
-                            setTaskItems={(newTaskItems) => lists[getIndexOfList(currentList)].tasks = newTaskItems}
-                            //taskItems={tasksByList[currentList]}
-                            taskItems={lists[getIndexOfList(currentList)].tasks}
-                            currentListIndex={currentList}
-                        />
-                    ))
-                ]}
-            </ScrollView>
-
-            <View style={styles.buttonWrapper}>
-                <TouchableOpacity>
-                    <AntDesignIcons name='pluscircle' size={60} onPress={() => setModalVisible(true)}/>
-                </TouchableOpacity>
-            </View>
-
-
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-
-            </KeyboardAvoidingView>
-
+                    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} />
+                </>
+            )}
         </View>
     )
 }
@@ -257,6 +233,27 @@ const styles = StyleSheet.create({
     container: {
       backgroundColor: "black",
       flex: 1,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#000',
+    },
+    loadingText: {
+      color: '#fff',
+      marginTop: 10,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#000',
+      padding: 20,
+    },
+    errorText: {
+      color: 'red',
+      textAlign: 'center',
     },
     productName: {
         backgroundColor: "white",
