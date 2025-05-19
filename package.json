@@ -19,7 +19,10 @@
     "react-native-draggable-flatlist": "^4.0.2",
     "react-native-element-dropdown": "^2.9.0",
     "react-native-gesture-handler": "~2.24.0",
-    "react-native-reanimated": "~3.17.4"
+    "react-native-reanimated": "~3.17.4",
+    "expo-notifications": "~0.31.1",
+    "expo-constants": "~17.1.6",
+    "expo-device": "~7.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0"

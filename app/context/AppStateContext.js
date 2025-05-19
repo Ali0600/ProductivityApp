@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageService from '../services/storageService';
+import NotificationService from '../services/notificationService';
 
 // Create the context
 export const AppStateContext = createContext();
@@ -14,6 +15,7 @@ export const AppStateProvider = ({ children }) => {
   const [currentList, setCurrentList] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reminderHours, setReminderHours] = useState('0');
 
   // Load initial data
   useEffect(() => {
@@ -22,11 +24,15 @@ export const AppStateProvider = ({ children }) => {
         setIsLoading(true);
         setError(null);
         
-        // Load lists and current list in parallel
-        const [loadedLists, loadedCurrentList] = await Promise.all([
+        // Load lists, current list, and reminder settings in parallel
+        const [loadedLists, loadedCurrentList, savedReminderHours] = await Promise.all([
           StorageService.getLists(),
           StorageService.getCurrentList(),
+          NotificationService.getReminderHours(),
         ]);
+
+        // Set reminder hours
+        setReminderHours(savedReminderHours);
         
         console.log("Loaded from storage:", { loadedLists, loadedCurrentList });
         
@@ -114,6 +120,28 @@ export const AppStateProvider = ({ children }) => {
     
     saveCurrentList();
   }, [currentList, isLoading]);
+
+  // Setup notifications and save reminder hours when they change
+  useEffect(() => {
+    const setupNotifications = async () => {
+      if (!isLoading) {
+        try {
+          // Register for notifications (only needs to be done once)
+          await NotificationService.registerForPushNotificationsAsync();
+          
+          // Save reminder hours and update scheduled notifications
+          await NotificationService.saveReminderHours(reminderHours);
+          
+          console.log(`Notification reminders set for every ${reminderHours} hours`);
+        } catch (err) {
+          console.error('Error setting up notifications:', err);
+          setError('Failed to set up notifications. Please try again.');
+        }
+      }
+    };
+    
+    setupNotifications();
+  }, [reminderHours, isLoading]);
 
   // Add a new task to a list
   const addTask = useCallback((listName, task) => {
@@ -408,6 +436,12 @@ export const AppStateProvider = ({ children }) => {
     console.log("Updating entire lists array:", newLists);
     setLists(newLists);
   }, []);
+  
+  // Update reminder hours
+  const updateReminderHours = useCallback((hours) => {
+    console.log("Updating reminder hours:", hours);
+    setReminderHours(hours);
+  }, []);
 
   // Context value
   const contextValue = {
@@ -416,6 +450,7 @@ export const AppStateProvider = ({ children }) => {
     currentListData,
     isLoading,
     error,
+    reminderHours,
     addTask,
     removeTask,
     removeTaskByIndex,
@@ -427,6 +462,7 @@ export const AppStateProvider = ({ children }) => {
     completeTask,
     completeTaskByIndex,
     updateLists,
+    updateReminderHours,
   };
 
   return (
