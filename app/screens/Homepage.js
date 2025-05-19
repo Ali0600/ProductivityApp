@@ -14,7 +14,6 @@ function Homepage(props){
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [settingsVisible, setSettingsVisible] = useState(false);
-    const [reminderHours, setReminderHours] = useState('0');
     const [currentTime, setCurrentTime] = useState(moment());
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
@@ -75,7 +74,7 @@ function Homepage(props){
     
     // Update the reminder hours state when context value changes
     useEffect(() => {
-        setReminderHours(reminderHours);
+        updateReminderHours(reminderHours);
     }, [reminderHours]);
 
     return(
@@ -196,12 +195,13 @@ function Homepage(props){
                                     // Ensure only valid numbers 0-24 are entered
                                     const numValue = parseInt(text);
                                     if ((text === '' || !isNaN(numValue)) && (numValue >= 0 && numValue <= 24 || text === '')) {
-                                        setReminderHours(text);
+                                        updateReminderHours(text);
                                     }
                                 }}
                                 value={reminderHours}
                                 placeholder={'Enter hours (0-24)'}
                                 keyboardType="numeric"
+                                returnKeyType="done"
                                 maxLength={2}
                             />
                             <Text style={styles.settingsDescription}>
