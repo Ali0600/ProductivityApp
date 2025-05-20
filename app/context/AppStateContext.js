@@ -127,21 +127,38 @@ export const AppStateProvider = ({ children }) => {
       if (!isLoading) {
         try {
           // Register for notifications (only needs to be done once)
-          await NotificationService.registerForPushNotificationsAsync();
+          const token = await NotificationService.registerForPushNotificationsAsync();
+          
+          if (token) {
+            console.log("Successfully registered for push notifications with token:", token);
+          } else {
+            console.log("No push token obtained, but continuing anyway");
+          }
           
           // Save reminder hours and update scheduled notifications
-          await NotificationService.saveReminderHours(reminderHours);
+          const reminderResult = await NotificationService.saveReminderHours(reminderHours);
           
-          console.log(`Notification reminders set for every ${reminderHours} hours`);
+          if (reminderResult) {
+            console.log(`Notification reminders set for every ${reminderHours} hours`);
+          } else {
+            console.warn("Failed to save reminder hours, but continuing");
+          }
+          
+          // Clear any previous error about notifications
+          if (error && error.includes('notifications')) {
+            setError(null);
+          }
         } catch (err) {
           console.error('Error setting up notifications:', err);
-          setError('Failed to set up notifications. Please try again.');
+          // Don't set an error for the user unless it's critical
+          // This allows the app to function even without notifications
+          console.warn('Continuing without notifications');
         }
       }
     };
     
     setupNotifications();
-  }, [reminderHours, isLoading]);
+  }, [reminderHours, isLoading, error]);
 
   // Add a new task to a list
   const addTask = useCallback((listName, task) => {

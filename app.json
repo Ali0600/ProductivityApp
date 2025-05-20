@@ -2,7 +2,7 @@
   "expo": {
     "name": "ADHD Habits",
     "slug": "adhd-habits",
-    "version": "1.0.12",
+    "version": "1.0.13",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,7 +18,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mhassan0600.adhd-habits",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       },
       "usesApnsToken": true
     },
@@ -42,6 +43,16 @@
     "updates": {
       "url": "https://u.expo.dev/3301b407-d8a6-4018-bf3c-4f1db722f073"
     },
-    "owner": "mhassan0600"
+    "owner": "mhassan0600",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./app/assets/icon.png",
+          "color": "#ffffff",
+          "sounds": []
+        }
+      ]
+    ]
   }
 }

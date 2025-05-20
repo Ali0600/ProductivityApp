@@ -51,10 +51,16 @@ export default class NotificationService {
         return null;
       }
       
-      // Get the token
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig.extra?.eas?.projectId,
-      })).data;
+      try {
+        // Get the token
+        token = (await Notifications.getExpoPushTokenAsync({
+          projectId: Constants.expoConfig.extra?.eas?.projectId,
+        })).data;
+        console.log("Successfully obtained push token:", token);
+      } catch (tokenError) {
+        console.error("Error getting push token:", tokenError);
+        // Continue without a token, but at least don't crash
+      }
     } else {
       console.log('Must use physical device for Push Notifications');
     }
