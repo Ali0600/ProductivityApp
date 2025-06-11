@@ -14,7 +14,7 @@ Notifications.setNotificationHandler({
 });
 
 export default class NotificationService {
-  static REMINDER_HOURS_KEY = 'reminderHours';
+  static REMINDER_MINUTES_KEY = 'reminderMinutes';
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
 
   /**
@@ -69,35 +69,46 @@ export default class NotificationService {
   }
 
   /**
-   * Save reminder hours setting
-   * @param {string} hours - Hours between reminders, '0' to disable
+   * Save reminder minutes setting
+   * @param {string} minutes - Minutes between reminders, '0' to disable
    * @returns {Promise<boolean>} - Success status
    */
-  static async saveReminderHours(hours) {
+  static async saveReminderMinutes(minutes) {
     try {
-      console.log(`Saving reminder hours: ${hours}`);
-      await AsyncStorage.setItem(this.REMINDER_HOURS_KEY, hours);
+      const minutesNum = parseInt(minutes, 10);
+      
+      if (isNaN(minutesNum) || minutesNum < 0) {
+        console.error('Reminder minutes must be a non-negative integer');
+        return false;
+      }
+      if (minutesNum > 10080) {
+        console.error('Reminder minutes cannot exceed 7 days (10,080 minutes)');
+        return false;
+      }
+      
+      console.log(`Saving reminder minutes: ${minutes}`);
+      await AsyncStorage.setItem(this.REMINDER_MINUTES_KEY, minutes);
       
       // Update the scheduled notification
       await this.scheduleTaskReminder();
       
       return true;
     } catch (error) {
-      console.error('Error saving reminder hours:', error);
+      console.error('Error saving reminder minutes:', error);
       return false;
     }
   }
 
   /**
-   * Get saved reminder hours
-   * @returns {Promise<string>} - Hours between reminders, '0' if disabled
+   * Get saved reminder minutes
+   * @returns {Promise<string>} - Minutes between reminders, '0' if disabled
    */
-  static async getReminderHours() {
+  static async getReminderMinutes() {
     try {
-      const hours = await AsyncStorage.getItem(this.REMINDER_HOURS_KEY);
-      return hours ?? '0';
+      const minutes = await AsyncStorage.getItem(this.REMINDER_MINUTES_KEY);
+      return minutes ?? '0';
     } catch (error) {
-      console.error('Error getting reminder hours:', error);
+      console.error('Error getting reminder minutes:', error);
       return '0';
     }
   }
@@ -111,18 +122,22 @@ export default class NotificationService {
       // Cancel any existing reminders
       await this.cancelTaskReminder();
       
-      // Get the reminder hours
-      const hours = await this.getReminderHours();
-      const hoursNum = parseInt(hours);
+      // Get the reminder minutes
+      const minutes = await this.getReminderMinutes();
+      const minutesNum = parseInt(minutes);
       
-      // If hours is 0, don't schedule any reminders
-      if (hoursNum <= 0) {
-        console.log('Task reminders disabled (0 hours)');
+      // If minutes is 0, don't schedule any reminders
+      if (minutesNum <= 0) {
+        console.log('Task reminders disabled (0 minutes)');
         return null;
       }
       
-      // Schedule a new reminder
-      console.log(`Scheduling task reminder every ${hours} hours`);
+      // Convert minutes to seconds
+      const intervalSeconds = minutesNum * 60;
+      console.log(`Scheduling task reminder every ${minutes} minutes`);
+      
+      // Try just one notification first to test
+      console.log(`Scheduling single notification for ${intervalSeconds} seconds from now`);
       
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
@@ -132,15 +147,14 @@ export default class NotificationService {
           priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger: {
-          seconds: hoursNum * 60 * 60, // Convert hours to seconds
-          repeats: true,
+          seconds: intervalSeconds,
         },
       });
       
-      // Save the notification ID so we can cancel it later
+      // Save the notification ID
       await AsyncStorage.setItem(this.NOTIFICATION_ID_KEY, notificationId);
       
-      console.log(`Scheduled task reminder with ID: ${notificationId}`);
+      console.log(`Scheduled notification for ${intervalSeconds} seconds from now with ID: ${notificationId}`);
       return notificationId;
     } catch (error) {
       console.error('Error scheduling task reminder:', error);
@@ -154,17 +168,12 @@ export default class NotificationService {
    */
   static async cancelTaskReminder() {
     try {
-      // Get the saved notification ID
-      const notificationId = await AsyncStorage.getItem(this.NOTIFICATION_ID_KEY);
+      // Cancel ALL scheduled notifications to be safe
+      console.log('Cancelling all scheduled notifications');
+      await Notifications.cancelAllScheduledNotificationsAsync();
       
-      if (notificationId) {
-        // Cancel the notification
-        console.log(`Cancelling task reminder with ID: ${notificationId}`);
-        await Notifications.cancelScheduledNotificationAsync(notificationId);
-        
-        // Clear the saved notification ID
-        await AsyncStorage.removeItem(this.NOTIFICATION_ID_KEY);
-      }
+      // Clear the saved notification ID
+      await AsyncStorage.removeItem(this.NOTIFICATION_ID_KEY);
       
       return true;
     } catch (error) {

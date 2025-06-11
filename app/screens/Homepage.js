@@ -8,6 +8,7 @@ import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useAppState, useLists, useListTasks, useAppLoading, useNotifications } from '../hooks/useAppState';
+import NotificationService from '../services/notificationService';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -22,7 +23,7 @@ function Homepage(props){
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
     const { addTaskToList, reorderTasksInList } = useListTasks(currentList);
-    const { reminderHours, updateReminderHours } = useNotifications();
+    const { reminderMinutes, updateReminderMinutes } = useNotifications();
 
     // This useEffect is used to update the current time every 10 seconds
     useEffect(() => {
@@ -68,14 +69,16 @@ function Homepage(props){
     };
     
     // Function to save notification settings
-    const saveNotificationSettings = () => {
-        updateReminderHours(reminderHours);
+    const saveNotificationSettings = async () => {
+        // Save to storage and schedule notifications
+        const success = await NotificationService.saveReminderMinutes(reminderMinutes);
+        if (success) {
+            console.log(`Notification reminders set for every ${reminderMinutes} minutes`);
+        } else {
+            Alert.alert('Settings not saved', 'Please enter a valid number (0-10080)');
+        }
     };
     
-    // Update the reminder hours state when context value changes
-    useEffect(() => {
-        updateReminderHours(reminderHours);
-    }, [reminderHours]);
 
     return(
         <View style={styles.container}>
@@ -188,24 +191,27 @@ function Homepage(props){
                     <Modal visible={settingsVisible} animationType="slide" transparent={true}>
                         <View style={styles.modalContent}>
                             <Text style={styles.settingsTitle}>Notification Settings</Text>
-                            <Text style={styles.settingsLabel}>Reminder time (in hours):</Text>
+                            <Text style={styles.settingsLabel}>Reminder time (in minutes):</Text>
                             <TextInput
                                 style={styles.inputForms}
                                 onChangeText={text => {
-                                    // Ensure only valid numbers 0-24 are entered
-                                    const numValue = parseInt(text);
-                                    if ((text === '' || !isNaN(numValue)) && (numValue >= 0 && numValue <= 24 || text === '')) {
-                                        updateReminderHours(text);
+                                    if (text === '') {
+                                        updateReminderMinutes('0');
+                                    } else {
+                                        const numValue = parseInt(text);
+                                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 10080) {
+                                            updateReminderMinutes(String(numValue));
+                                        }
                                     }
                                 }}
-                                value={reminderHours}
-                                placeholder={'Enter hours (0-24)'}
+                                value={reminderMinutes}
+                                placeholder={'Enter minutes (0-10080 for 7 days, or 30 for testing)'}
                                 keyboardType="numeric"
                                 returnKeyType="done"
-                                maxLength={2}
+                                maxLength={5}
                             />
                             <Text style={styles.settingsDescription}>
-                                Set to 0 to disable notifications. Otherwise, you'll get a "Finish a Task" reminder every {reminderHours} hour(s).
+                                Set to 0 to disable notifications. Set to 30 for 30-second testing mode. Otherwise, you'll get a "Finish a Task" reminder every {reminderMinutes} minute(s).
                             </Text>
                         </View>
 
@@ -215,9 +221,9 @@ function Homepage(props){
                             </TouchableOpacity>
 
                             <TouchableOpacity>
-                                <AntDesignIcons name='checkcircle' size={60} onPress={() => {
+                                <AntDesignIcons name='checkcircle' size={60} onPress={async () => {
                                     // Save the settings
-                                    saveNotificationSettings();
+                                    await saveNotificationSettings();
                                     setSettingsVisible(false);
                                 }}/>
                             </TouchableOpacity>

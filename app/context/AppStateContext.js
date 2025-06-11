@@ -15,7 +15,7 @@ export const AppStateProvider = ({ children }) => {
   const [currentList, setCurrentList] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [reminderHours, setReminderHours] = useState('0');
+  const [reminderMinutes, setReminderMinutes] = useState('0');
 
   // Load initial data
   useEffect(() => {
@@ -25,14 +25,14 @@ export const AppStateProvider = ({ children }) => {
         setError(null);
         
         // Load lists, current list, and reminder settings in parallel
-        const [loadedLists, loadedCurrentList, savedReminderHours] = await Promise.all([
+        const [loadedLists, loadedCurrentList, savedReminderMinutes] = await Promise.all([
           StorageService.getLists(),
           StorageService.getCurrentList(),
-          NotificationService.getReminderHours(),
+          NotificationService.getReminderMinutes(),
         ]);
 
-        // Set reminder hours
-        setReminderHours(savedReminderHours);
+        // Set reminder minutes
+        setReminderMinutes(savedReminderMinutes);
         
         console.log("Loaded from storage:", { loadedLists, loadedCurrentList });
         
@@ -121,7 +121,7 @@ export const AppStateProvider = ({ children }) => {
     saveCurrentList();
   }, [currentList, isLoading]);
 
-  // Setup notifications and save reminder hours when they change
+  // Setup notifications once on app load
   useEffect(() => {
     const setupNotifications = async () => {
       if (!isLoading) {
@@ -135,14 +135,8 @@ export const AppStateProvider = ({ children }) => {
             console.log("No push token obtained, but continuing anyway");
           }
           
-          // Save reminder hours and update scheduled notifications
-          const reminderResult = await NotificationService.saveReminderHours(reminderHours);
-          
-          if (reminderResult) {
-            console.log(`Notification reminders set for every ${reminderHours} hours`);
-          } else {
-            console.warn("Failed to save reminder hours, but continuing");
-          }
+          // Only schedule notifications on initial load, not when reminderMinutes changes
+          await NotificationService.scheduleTaskReminder();
           
           // Clear any previous error about notifications
           if (error && error.includes('notifications')) {
@@ -158,7 +152,7 @@ export const AppStateProvider = ({ children }) => {
     };
     
     setupNotifications();
-  }, [reminderHours, isLoading, error]);
+  }, [isLoading, error]);
 
   // Add a new task to a list
   const addTask = useCallback((listName, task) => {
@@ -454,10 +448,10 @@ export const AppStateProvider = ({ children }) => {
     setLists(newLists);
   }, []);
   
-  // Update reminder hours
-  const updateReminderHours = useCallback((hours) => {
-    console.log("Updating reminder hours:", hours);
-    setReminderHours(hours);
+  // Update reminder minutes
+  const updateReminderMinutes = useCallback((minutes) => {
+    console.log("Updating reminder minutes:", minutes);
+    setReminderMinutes(minutes);
   }, []);
 
   // Context value
@@ -467,7 +461,7 @@ export const AppStateProvider = ({ children }) => {
     currentListData,
     isLoading,
     error,
-    reminderHours,
+    reminderMinutes,
     addTask,
     removeTask,
     removeTaskByIndex,
@@ -479,7 +473,7 @@ export const AppStateProvider = ({ children }) => {
     completeTask,
     completeTaskByIndex,
     updateLists,
-    updateReminderHours,
+    updateReminderMinutes,
   };
 
   return (

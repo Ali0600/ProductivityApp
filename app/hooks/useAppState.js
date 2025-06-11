@@ -102,10 +102,10 @@ export const useAppLoading = () => {
  * @returns {Object} Notification settings and functions
  */
 export const useNotifications = () => {
-  const { reminderHours, updateReminderHours } = useAppState();
+  const { reminderMinutes, updateReminderMinutes } = useAppState();
   
   return {
-    reminderHours,
-    updateReminderHours,
+    reminderMinutes,
+    updateReminderMinutes,
   };
 };
