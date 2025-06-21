@@ -10,22 +10,12 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_NO_CACHE": "1"
-      },
-      "cache": {
-        "disabled": true
-      },
-      "prebuildCommand": "npx expo prebuild --no-install --platform ios --skip-dependency-update"
+
+      }
     },
     "production": {
       "env": {
-        "EXPO_NO_CACHE": "1"
-      },
-      "cache": {
-        "disabled": true
-      },
-      "prebuildCommand": "npx expo prebuild --no-install --platform ios --skip-dependency-update"
-    }
+      }
   },
   "submit": {
     "production": {}
