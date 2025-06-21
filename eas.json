@@ -14,7 +14,8 @@
       },
       "cache": {
         "disabled": true
-      }
+      },
+      "prebuildCommand": "npx expo prebuild --no-install --platform ios --skip-dependency-update"
     },
     "production": {
       "env": {
@@ -22,7 +23,8 @@
       },
       "cache": {
         "disabled": true
-      }
+      },
+      "prebuildCommand": "npx expo prebuild --no-install --platform ios --skip-dependency-update"
     }
   },
   "submit": {
