@@ -10,6 +10,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -43,6 +45,7 @@ export default class NotificationService {
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
+        console.log('Notification permission status:', finalStatus);
       }
       
       // If we still don't have permission, we can't send notifications
@@ -99,6 +102,108 @@ export default class NotificationService {
     } catch (error) {
       console.error('Error getting reminder hours:', error);
       return '0';
+    }
+  }
+
+  /**
+   * Schedule hourly notifications from 8am to 10pm
+   * @param {boolean} debugMode - If true, sends notifications every minute instead of hourly
+   * @returns {Promise<string[]>} - Array of notification IDs
+   */
+  static async scheduleHourlyNotifications(debugMode = true) {
+    try {
+      // Cancel any existing reminders
+      await this.cancelAllNotifications();
+      
+      const notificationIds = [];
+      
+      if (debugMode) {
+        // Debug mode: send notification every minute for testing
+        console.log('Debug mode: scheduling notification every minute');
+        
+        // First send an immediate notification to test
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'DEBUG: Immediate Test',
+            body: 'If you see this, notifications are working',
+            sound: true,
+          },
+          trigger: null,
+        });
+        
+        // Then schedule repeating notifications
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Time to be productive! (DEBUG)',
+            body: 'Finish a Task - Debug Mode',
+            sound: true,
+          },
+          trigger: {
+            seconds: 60, // Every minute
+            repeats: true,
+          },
+        });
+        
+        notificationIds.push(notificationId);
+        console.log(`Scheduled debug notification every minute with ID: ${notificationId}`);
+      } else {
+        // Normal mode: schedule notifications for each hour from 8am to 10pm
+        for (let hour = 8; hour <= 22; hour++) {
+          const notificationId = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Time to be productive!',
+              body: 'Finish a Task',
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+            },
+            trigger: {
+              hour: hour,
+              minute: 0,
+              repeats: true,
+            },
+          });
+          
+          notificationIds.push(notificationId);
+          console.log(`Scheduled notification for ${hour}:00 with ID: ${notificationId}`);
+        }
+      }
+      
+      // Save all notification IDs
+      await AsyncStorage.setItem('hourlyNotificationIds', JSON.stringify(notificationIds));
+      
+      const modeText = debugMode ? 'debug (every minute)' : 'hourly (8am to 10pm)';
+      console.log(`Scheduled ${notificationIds.length} ${modeText} notifications`);
+      return notificationIds;
+    } catch (error) {
+      console.error('Error scheduling hourly notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cancel all hourly notifications
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async cancelAllNotifications() {
+    try {
+      // Cancel the old task reminder
+      await this.cancelTaskReminder();
+      
+      // Cancel hourly notifications
+      const savedIds = await AsyncStorage.getItem('hourlyNotificationIds');
+      if (savedIds) {
+        const notificationIds = JSON.parse(savedIds);
+        for (const id of notificationIds) {
+          await Notifications.cancelScheduledNotificationAsync(id);
+          console.log(`Cancelled notification with ID: ${id}`);
+        }
+        await AsyncStorage.removeItem('hourlyNotificationIds');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error cancelling all notifications:', error);
+      return false;
     }
   }
 

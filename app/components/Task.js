@@ -21,12 +21,12 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
     // If taskId is not provided, create a fallback ID
     const actualTaskId = taskId || `${text}-${index}`;
     
-    console.log("Task component received:", { 
-        text, 
-        index, 
-        currentListName, 
-        taskId: actualTaskId 
-    });
+    //console.log("Task component received:", { 
+    //    text, 
+    //    index, 
+    //    currentListName, 
+    //    taskId: actualTaskId 
+    //});
     
     // For debugging - show when component mounts
     useEffect(() => {
