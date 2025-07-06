@@ -7,13 +7,12 @@ import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import { useAppState, useLists, useListTasks, useAppLoading, useNotifications } from '../hooks/useAppState';
+import { useAppState, useLists, useListTasks, useAppLoading } from '../hooks/useAppState';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
-    const [settingsVisible, setSettingsVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(moment());
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
@@ -22,7 +21,6 @@ function Homepage(props){
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
     const { addTaskToList, reorderTasksInList } = useListTasks(currentList);
-    const { reminderHours, updateReminderHours } = useNotifications();
 
     // This useEffect is used to update the current time every 10 seconds
     useEffect(() => {
@@ -66,16 +64,6 @@ function Homepage(props){
         setNewListName(''); // Clear input
         setTaskListVisible(false);
     };
-    
-    // Function to save notification settings
-    const saveNotificationSettings = () => {
-        updateReminderHours(reminderHours);
-    };
-    
-    // Update the reminder hours state when context value changes
-    useEffect(() => {
-        updateReminderHours(reminderHours);
-    }, [reminderHours]);
 
     return(
         <View style={styles.container}>
@@ -185,44 +173,6 @@ function Homepage(props){
                         </Modal>
                     </Modal>
 
-                    <Modal visible={settingsVisible} animationType="slide" transparent={true}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.settingsTitle}>Notification Settings</Text>
-                            <Text style={styles.settingsLabel}>Reminder time (in hours):</Text>
-                            <TextInput
-                                style={styles.inputForms}
-                                onChangeText={text => {
-                                    // Ensure only valid numbers 0-24 are entered
-                                    const numValue = parseInt(text);
-                                    if ((text === '' || !isNaN(numValue)) && (numValue >= 0 && numValue <= 24 || text === '')) {
-                                        updateReminderHours(text);
-                                    }
-                                }}
-                                value={reminderHours}
-                                placeholder={'Enter hours (0-24)'}
-                                keyboardType="numeric"
-                                returnKeyType="done"
-                                maxLength={2}
-                            />
-                            <Text style={styles.settingsDescription}>
-                                Set to 0 to disable notifications. Otherwise, you'll get a "Finish a Task" reminder every {reminderHours} hour(s).
-                            </Text>
-                        </View>
-
-                        <View style={styles.buttonWrapper}>
-                            <TouchableOpacity>
-                                <AntDesignIcons name='closecircle' size={60} onPress={() => setSettingsVisible(false)} />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity>
-                                <AntDesignIcons name='checkcircle' size={60} onPress={() => {
-                                    // Save the settings
-                                    saveNotificationSettings();
-                                    setSettingsVisible(false);
-                                }}/>
-                            </TouchableOpacity>
-                        </View>
-                    </Modal>
 
                     <SafeAreaView style={styles.productName}>
                         <View flexDirection="row" justifyContent="space-between">
@@ -232,7 +182,7 @@ function Homepage(props){
 
                             <Text style={styles.textFont}>ADHDone</Text>
 
-                            <TouchableOpacity onPress={() => setSettingsVisible(true)}>
+                            <TouchableOpacity>
                                <FeatherIcons name='settings' size={40}/>
                             </TouchableOpacity>
                         </View>
@@ -369,26 +319,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    settingsTitle: {
-        fontSize: 24,
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: 20,
-        marginTop: 10,
-    },
-    settingsLabel: {
-        fontSize: 16,
-        marginLeft: 10,
-        marginBottom: 5,
-    },
-    settingsDescription: {
-        fontSize: 14,
-        color: "gray",
-        marginTop: 10,
-        marginLeft: 10,
-        marginRight: 10,
-        textAlign: "center",
-    }
   })
 
 export default Homepage;

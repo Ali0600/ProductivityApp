@@ -97,15 +97,3 @@ export const useAppLoading = () => {
   };
 };
 
-/**
- * Custom hook to access and manage notification settings
- * @returns {Object} Notification settings and functions
- */
-export const useNotifications = () => {
-  const { reminderHours, updateReminderHours } = useAppState();
-  
-  return {
-    reminderHours,
-    updateReminderHours,
-  };
-};

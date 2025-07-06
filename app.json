@@ -21,7 +21,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"]
       },
-      "usesApnsToken": true
+      "usesApnsToken": true,
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,14 +46,8 @@
     },
     "owner": "mhassan0600",
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./app/assets/icon.png",
-          "color": "#ffffff",
-          "sounds": []
-        }
-      ]
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
     ]
   }
 }
