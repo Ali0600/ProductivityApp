@@ -12,6 +12,9 @@ export default function App() {
       console.log('Initializing notifications...');
       await NotificationService.registerForPushNotificationsAsync();
       
+      // Initialize background notification handling
+      await NotificationService.initializeBackgroundNotifications();
+      
       // Schedule background notifications
       await NotificationService.scheduleHourlyNotifications(true);
       

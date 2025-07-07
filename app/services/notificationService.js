@@ -3,6 +3,10 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as TaskManager from 'expo-task-manager';
+
+// Note: TaskManager and background tasks are only needed for remote push notifications
+// Local notifications work in background automatically without additional setup
 
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -18,6 +22,59 @@ Notifications.setNotificationHandler({
 export default class NotificationService {
   static REMINDER_HOURS_KEY = 'reminderHours';
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
+
+  /**
+   * Initialize background notification handling
+   * @returns {Promise<void>}
+   */
+  static async initializeBackgroundNotifications() {
+    try {
+      console.log('Initializing background notification handlers...');
+
+      // Add notification response listeners (when user taps notification)
+      const subscription = Notifications.addNotificationResponseReceivedListener(
+        this.handleNotificationResponse
+      );
+
+      // Add notification received listeners (for foreground)
+      const receivedSubscription = Notifications.addNotificationReceivedListener(
+        this.handleNotificationReceived
+      );
+
+      console.log('Background notification handlers initialized successfully');
+      return { subscription, receivedSubscription };
+    } catch (error) {
+      console.error('Error initializing background notifications:', error);
+    }
+  }
+
+  /**
+   * Handle notification response (when user taps on notification)
+   * @param {Object} response - Notification response object
+   */
+  static handleNotificationResponse = (response) => {
+    console.log('Notification response received:', response);
+    
+    const { notification, userText } = response;
+    console.log('User tapped on notification:', notification.request.content.title);
+    
+    // Handle the notification tap
+    // You can navigate to specific screens, update app state, etc.
+    if (notification.request.content.data) {
+      console.log('Notification data:', notification.request.content.data);
+    }
+  };
+
+  /**
+   * Handle notification received (when app is in foreground)
+   * @param {Object} notification - Notification object
+   */
+  static handleNotificationReceived = (notification) => {
+    console.log('Notification received in foreground:', notification);
+    
+    // Handle foreground notification
+    // You can show custom UI, update app state, etc.
+  };
 
   /**
    * Register for push notifications
@@ -137,6 +194,11 @@ export default class NotificationService {
             title: 'Time to be productive! (DEBUG)',
             body: 'Finish a Task - Debug Mode',
             sound: true,
+            data: {
+              type: 'task_reminder',
+              mode: 'debug',
+              timestamp: Date.now(),
+            },
           },
           trigger: {
             seconds: 60, // Every minute
@@ -155,6 +217,12 @@ export default class NotificationService {
               body: 'Finish a Task',
               sound: true,
               priority: Notifications.AndroidNotificationPriority.HIGH,
+              data: {
+                type: 'task_reminder',
+                mode: 'hourly',
+                hour: hour,
+                timestamp: Date.now(),
+              },
             },
             trigger: {
               hour: hour,
@@ -235,6 +303,12 @@ export default class NotificationService {
           body: 'Finish a Task',
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: {
+            type: 'task_reminder',
+            mode: 'custom',
+            hours: hoursNum,
+            timestamp: Date.now(),
+          },
         },
         trigger: {
           seconds: hoursNum * 60 * 60, // Convert hours to seconds
