@@ -2,10 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as TaskManager from 'expo-task-manager';
 
-// Note: TaskManager and background tasks are only needed for remote push notifications
-// Local notifications work in background automatically without additional setup
 
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -20,6 +17,7 @@ Notifications.setNotificationHandler({
 export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static SIXTY_SECOND_NOTIFICATION_ID_KEY = 'sixtySecondNotificationId';
+  static TWO_HOUR_NOTIFICATION_ID_KEY = 'twoHourNotificationId';
   static SIXTY_SECOND_TIMER_ID = null;
 
   /**
@@ -277,6 +275,71 @@ export default class NotificationService {
   }
 
   /**
+   * Start 2-hour recurring notifications
+   * @returns {Promise<string|null>} - Notification ID or null if failed
+   */
+  static async start2HourNotifications() {
+    try {
+      // Stop any existing 2-hour notifications
+      await this.stop2HourNotifications();
+      
+      console.log('Starting 2-hour recurring notifications');
+      
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '2 Hour Notification',
+          body: 'Time for a productivity check-in!',
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: {
+            type: '2_hour_reminder',
+            timestamp: Date.now(),
+          },
+        },
+        trigger: {
+          seconds: 7200, // 2 hours (7200 seconds)
+          repeats: true,
+        },
+      });
+      
+      // Save the notification ID so we can cancel it later
+      await AsyncStorage.setItem(this.TWO_HOUR_NOTIFICATION_ID_KEY, notificationId);
+      
+      console.log(`Scheduled 2-hour notification with ID: ${notificationId}`);
+      return notificationId;
+    } catch (error) {
+      console.error('Error scheduling 2-hour notification:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Stop the 2-hour recurring notifications
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async stop2HourNotifications() {
+    try {
+      // Get the saved notification ID
+      const notificationId = await AsyncStorage.getItem(this.TWO_HOUR_NOTIFICATION_ID_KEY);
+      
+      if (notificationId) {
+        // Cancel the notification
+        console.log(`Cancelling 2-hour notification with ID: ${notificationId}`);
+        await Notifications.cancelScheduledNotificationAsync(notificationId);
+        
+        // Clear the saved notification ID
+        await AsyncStorage.removeItem(this.TWO_HOUR_NOTIFICATION_ID_KEY);
+        console.log('2-hour notifications stopped');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error stopping 2-hour notifications:', error);
+      return false;
+    }
+  }
+
+  /**
    * Cancel all scheduled notifications
    * @returns {Promise<boolean>} - Success status
    */
@@ -285,6 +348,7 @@ export default class NotificationService {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await AsyncStorage.removeItem(this.NOTIFICATION_ID_KEY);
       await AsyncStorage.removeItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
+      await AsyncStorage.removeItem(this.TWO_HOUR_NOTIFICATION_ID_KEY);
       console.log('All notifications cancelled');
       return true;
     } catch (error) {
