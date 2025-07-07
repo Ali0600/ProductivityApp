@@ -1,21 +1,77 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as TaskManager from 'expo-task-manager';
+
+// Note: TaskManager and background tasks are only needed for remote push notifications
+// Local notifications work in background automatically without additional setup
 
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
 });
 
 export default class NotificationService {
-  static REMINDER_HOURS_KEY = 'reminderHours';
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
+
+  /**
+   * Initialize background notification handling
+   * @returns {Promise<void>}
+   */
+  static async initializeBackgroundNotifications() {
+    try {
+      console.log('Initializing background notification handlers...');
+
+      // Add notification response listeners (when user taps notification)
+      const subscription = Notifications.addNotificationResponseReceivedListener(
+        this.handleNotificationResponse
+      );
+
+      // Add notification received listeners (for foreground)
+      const receivedSubscription = Notifications.addNotificationReceivedListener(
+        this.handleNotificationReceived
+      );
+
+      console.log('Background notification handlers initialized successfully');
+      return { subscription, receivedSubscription };
+    } catch (error) {
+      console.error('Error initializing background notifications:', error);
+    }
+  }
+
+  /**
+   * Handle notification response (when user taps on notification)
+   * @param {Object} response - Notification response object
+   */
+  static handleNotificationResponse = (response) => {
+    console.log('Notification response received:', response);
+    
+    const { notification, userText } = response;
+    console.log('User tapped on notification:', notification.request.content.title);
+    
+    // Handle the notification tap
+    // You can navigate to specific screens, update app state, etc.
+    if (notification.request.content.data) {
+      console.log('Notification data:', notification.request.content.data);
+    }
+  };
+
+  /**
+   * Handle notification received (when app is in foreground)
+   * @param {Object} notification - Notification object
+   */
+  static handleNotificationReceived = (notification) => {
+    console.log('Notification received in foreground:', notification);
+    
+    // Handle foreground notification
+    // You can show custom UI, update app state, etc.
+  };
 
   /**
    * Register for push notifications
@@ -24,15 +80,6 @@ export default class NotificationService {
   static async registerForPushNotificationsAsync() {
     let token = null;
     
-    if (Platform.OS === 'android') {
-      // Set notification channel for Android
-      await Notifications.setNotificationChannelAsync('task-reminders', {
-        name: 'Task Reminders',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
 
     if (Device.isDevice) {
       // Check if we have permission
@@ -43,6 +90,7 @@ export default class NotificationService {
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
+        console.log('Notification permission status:', finalStatus);
       }
       
       // If we still don't have permission, we can't send notifications
@@ -66,40 +114,6 @@ export default class NotificationService {
     }
 
     return token;
-  }
-
-  /**
-   * Save reminder hours setting
-   * @param {string} hours - Hours between reminders, '0' to disable
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async saveReminderHours(hours) {
-    try {
-      console.log(`Saving reminder hours: ${hours}`);
-      await AsyncStorage.setItem(this.REMINDER_HOURS_KEY, hours);
-      
-      // Update the scheduled notification
-      await this.scheduleTaskReminder();
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving reminder hours:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get saved reminder hours
-   * @returns {Promise<string>} - Hours between reminders, '0' if disabled
-   */
-  static async getReminderHours() {
-    try {
-      const hours = await AsyncStorage.getItem(this.REMINDER_HOURS_KEY);
-      return hours ?? '0';
-    } catch (error) {
-      console.error('Error getting reminder hours:', error);
-      return '0';
-    }
   }
 
   /**
@@ -130,6 +144,12 @@ export default class NotificationService {
           body: 'Finish a Task',
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: {
+            type: 'task_reminder',
+            mode: 'custom',
+            hours: hoursNum,
+            timestamp: Date.now(),
+          },
         },
         trigger: {
           seconds: hoursNum * 60 * 60, // Convert hours to seconds
