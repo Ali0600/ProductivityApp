@@ -74,7 +74,7 @@ export default class NotificationService {
   };
 
   /**
-   * Register for push notifications
+   * Register for push notifications with enhanced TestFlight support
    * @returns {Promise<string|null>} Expo push token or null if not available
    */
   static async registerForPushNotificationsAsync() {
@@ -86,16 +86,30 @@ export default class NotificationService {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
       
-      // If we don't have permission, ask for it
+      console.log('Initial notification permission status:', existingStatus);
+      
+      // If we don't have permission, ask for it with all permission types
       if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowDisplayInCarPlay: true,
+            allowCriticalAlerts: true,
+            provideAppNotificationSettings: true,
+            allowProvisional: true,
+            allowAnnouncements: true,
+          },
+        });
         finalStatus = status;
-        console.log('Notification permission status:', finalStatus);
+        console.log('Requested notification permission status:', finalStatus);
       }
       
       // If we still don't have permission, we can't send notifications
       if (finalStatus !== 'granted') {
-        console.log('Failed to get push token for push notification!');
+        console.log('Failed to get notification permission!');
+        console.log('Permission status details:', await Notifications.getPermissionsAsync());
         return null;
       }
       

@@ -21,7 +21,10 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"]
       },
-      "usesApnsToken": true
+      "usesApnsToken": true,
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
     "android": {
       "adaptiveIcon": {
