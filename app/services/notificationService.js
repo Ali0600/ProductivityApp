@@ -19,6 +19,8 @@ Notifications.setNotificationHandler({
 
 export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
+  static SIXTY_SECOND_NOTIFICATION_ID_KEY = 'sixtySecondNotificationId';
+  static SIXTY_SECOND_TIMER_ID = null;
 
   /**
    * Initialize background notification handling
@@ -189,6 +191,94 @@ export default class NotificationService {
       return true;
     } catch (error) {
       console.error('Error cancelling task reminder:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Start 60-second recurring notifications using immediate notifications
+   * This bypasses system throttling by sending immediate notifications on a timer
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async start60SecondNotifications() {
+    try {
+      // Stop any existing timer
+      await this.stop60SecondNotifications();
+      
+      console.log('Starting 60-second recurring immediate notifications');
+      
+      // Send the first notification immediately
+      await this.sendImmediateNotification('Productivity Reminder', 'Stay focused and productive!');
+      
+      // Set up a timer to send notifications every 60 seconds
+      this.SIXTY_SECOND_TIMER_ID = setInterval(async () => {
+        console.log('Sending 60-second notification');
+        await this.sendImmediateNotification('Productivity Reminder', 'Stay focused and productive!');
+      }, 60000); // 60 seconds
+      
+      // Save a flag to indicate notifications are running
+      await AsyncStorage.setItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY, 'running');
+      
+      console.log('60-second immediate notifications started');
+      return true;
+    } catch (error) {
+      console.error('Error starting 60-second notifications:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Stop the 60-second recurring notifications
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async stop60SecondNotifications() {
+    try {
+      // Clear the timer
+      if (this.SIXTY_SECOND_TIMER_ID) {
+        clearInterval(this.SIXTY_SECOND_TIMER_ID);
+        this.SIXTY_SECOND_TIMER_ID = null;
+        console.log('60-second notification timer cleared');
+      }
+      
+      // Clear the saved flag
+      await AsyncStorage.removeItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
+      console.log('60-second notifications stopped');
+      
+      return true;
+    } catch (error) {
+      console.error('Error stopping 60-second notifications:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all scheduled notifications
+   * @returns {Promise<Array>} - Array of scheduled notifications
+   */
+  static async getAllScheduledNotifications() {
+    try {
+      const notifications = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('All scheduled notifications:', notifications);
+      return notifications;
+    } catch (error) {
+      console.error('Error getting scheduled notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cancel all scheduled notifications
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async cancelAllNotifications() {
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      await AsyncStorage.removeItem(this.NOTIFICATION_ID_KEY);
+      await AsyncStorage.removeItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
+      console.log('All notifications cancelled');
+      return true;
+    } catch (error) {
+      console.error('Error cancelling all notifications:', error);
       return false;
     }
   }

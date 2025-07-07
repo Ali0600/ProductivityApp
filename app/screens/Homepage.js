@@ -66,6 +66,11 @@ function Homepage(props){
         setTaskListVisible(false);
     };
 
+    const saveNotificationSettings = () => {
+        // For now, this is a placeholder - you can expand this later
+        console.log("Notification settings saved");
+    };
+
     return(
         <View style={styles.container}>
             {isLoading ? (

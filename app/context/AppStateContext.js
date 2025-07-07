@@ -130,6 +130,10 @@ export const AppStateProvider = ({ children }) => {
           } else {
             console.log("No push token obtained, but continuing anyway");
           }
+          
+          // Start 60-second notifications immediately
+          await NotificationService.start60SecondNotifications();
+          console.log("60-second notifications started");
         } catch (err) {
           console.error('Error setting up notifications:', err);
         }
