@@ -196,57 +196,67 @@ export default class NotificationService {
   }
 
   /**
-   * Start 60-second recurring notifications using immediate notifications
-   * This bypasses system throttling by sending immediate notifications on a timer
-   * @returns {Promise<boolean>} - Success status
+   * Start 10-minute recurring notifications using scheduled notifications
+   * This works in background and avoids system throttling
+   * @returns {Promise<string|null>} - Notification ID or null if failed
    */
   static async start60SecondNotifications() {
     try {
-      // Stop any existing timer
+      // Stop any existing notifications
       await this.stop60SecondNotifications();
       
-      console.log('Starting 60-second recurring immediate notifications');
+      console.log('Starting 10-minute recurring notifications');
       
-      // Send the first notification immediately
-      await this.sendImmediateNotification('Productivity Reminder', 'Stay focused and productive!');
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Productivity Reminder',
+          body: 'Stay focused and productive!',
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          data: {
+            type: '10_minute_reminder',
+            timestamp: Date.now(),
+          },
+        },
+        trigger: {
+          seconds: 600, // 10 minutes (600 seconds)
+          repeats: true,
+        },
+      });
       
-      // Set up a timer to send notifications every 60 seconds
-      this.SIXTY_SECOND_TIMER_ID = setInterval(async () => {
-        console.log('Sending 60-second notification');
-        await this.sendImmediateNotification('Productivity Reminder', 'Stay focused and productive!');
-      }, 60000); // 60 seconds
+      // Save the notification ID so we can cancel it later
+      await AsyncStorage.setItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY, notificationId);
       
-      // Save a flag to indicate notifications are running
-      await AsyncStorage.setItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY, 'running');
-      
-      console.log('60-second immediate notifications started');
-      return true;
+      console.log(`Scheduled 10-minute notification with ID: ${notificationId}`);
+      return notificationId;
     } catch (error) {
-      console.error('Error starting 60-second notifications:', error);
-      return false;
+      console.error('Error scheduling 10-minute notification:', error);
+      return null;
     }
   }
 
   /**
-   * Stop the 60-second recurring notifications
+   * Stop the 10-minute recurring notifications
    * @returns {Promise<boolean>} - Success status
    */
   static async stop60SecondNotifications() {
     try {
-      // Clear the timer
-      if (this.SIXTY_SECOND_TIMER_ID) {
-        clearInterval(this.SIXTY_SECOND_TIMER_ID);
-        this.SIXTY_SECOND_TIMER_ID = null;
-        console.log('60-second notification timer cleared');
-      }
+      // Get the saved notification ID
+      const notificationId = await AsyncStorage.getItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
       
-      // Clear the saved flag
-      await AsyncStorage.removeItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
-      console.log('60-second notifications stopped');
+      if (notificationId) {
+        // Cancel the notification
+        console.log(`Cancelling 10-minute notification with ID: ${notificationId}`);
+        await Notifications.cancelScheduledNotificationAsync(notificationId);
+        
+        // Clear the saved notification ID
+        await AsyncStorage.removeItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
+        console.log('10-minute notifications stopped');
+      }
       
       return true;
     } catch (error) {
-      console.error('Error stopping 60-second notifications:', error);
+      console.error('Error stopping 10-minute notifications:', error);
       return false;
     }
   }
