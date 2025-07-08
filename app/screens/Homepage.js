@@ -18,6 +18,10 @@ function Homepage(props){
     const [currentTime, setCurrentTime] = useState(moment());
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
+    const [is60SecRunning, setIs60SecRunning] = useState(false);
+    const [is10MinRunning, setIs10MinRunning] = useState(false);
+    const [is1HourRunning, setIs1HourRunning] = useState(false);
+    const [isTestRunning, setIsTestRunning] = useState(false);
     
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
@@ -72,25 +76,66 @@ function Homepage(props){
         console.log("Notification settings saved");
     };
 
-    const handleStart10MinNotifications = async () => {
+    const handleToggle60SecNotifications = async () => {
         try {
-            const result = await NotificationService.start60SecondNotifications();
-            console.log("10-minute notifications started:", result);
-            alert("10-minute notifications started!");
+            if (is60SecRunning) {
+                // Stop notifications
+                const result = await NotificationService.stop60SecondNotifications();
+                console.log("60-second notifications stopped:", result);
+                setIs60SecRunning(false);
+                alert("60-second notifications stopped!");
+            } else {
+                // Start notifications
+                const result = await NotificationService.start60SecondNotifications();
+                console.log("60-second notifications started:", result);
+                setIs60SecRunning(true);
+                alert("60-second notifications started!");
+            }
         } catch (error) {
-            console.error("Error starting 10-minute notifications:", error);
-            alert("Error starting 10-minute notifications: " + error.message);
+            console.error("Error toggling 60-second notifications:", error);
+            alert("Error toggling 60-second notifications: " + error.message);
         }
     };
 
-    const handleStart1HourNotifications = async () => {
+    const handleToggle10MinNotifications = async () => {
         try {
-            const result = await NotificationService.scheduleTaskReminder();
-            console.log("1-hour notifications started:", result);
-            alert("1-hour notifications started!");
+            if (is10MinRunning) {
+                // Stop notifications
+                const result = await NotificationService.stop10MinuteNotifications();
+                console.log("10-minute notifications stopped:", result);
+                setIs10MinRunning(false);
+                alert("10-minute notifications stopped!");
+            } else {
+                // Start notifications
+                const result = await NotificationService.start10MinuteNotifications();
+                console.log("10-minute notifications started:", result);
+                setIs10MinRunning(true);
+                alert("10-minute notifications started!");
+            }
         } catch (error) {
-            console.error("Error starting 1-hour notifications:", error);
-            alert("Error starting 1-hour notifications: " + error.message);
+            console.error("Error toggling 10-minute notifications:", error);
+            alert("Error toggling 10-minute notifications: " + error.message);
+        }
+    };
+
+    const handleToggle1HourNotifications = async () => {
+        try {
+            if (is1HourRunning) {
+                // Stop notifications
+                const result = await NotificationService.stop1HourNotifications();
+                console.log("1-hour notifications stopped:", result);
+                setIs1HourRunning(false);
+                alert("1-hour notifications stopped!");
+            } else {
+                // Start notifications
+                const result = await NotificationService.start1HourNotifications();
+                console.log("1-hour notifications started:", result);
+                setIs1HourRunning(true);
+                alert("1-hour notifications started!");
+            }
+        } catch (error) {
+            console.error("Error toggling 1-hour notifications:", error);
+            alert("Error toggling 1-hour notifications: " + error.message);
         }
     };
 
@@ -105,6 +150,27 @@ function Homepage(props){
         } catch (error) {
             console.error("Error requesting permissions:", error);
             alert("Error requesting permissions: " + error.message);
+        }
+    };
+
+    const handleToggleTestNotifications = async () => {
+        try {
+            if (isTestRunning) {
+                // Stop test notifications
+                const result = await NotificationService.stopTestNotifications();
+                console.log("Test notifications stopped:", result);
+                setIsTestRunning(false);
+                alert("Test notifications stopped!");
+            } else {
+                // Start test notifications
+                const result = await NotificationService.startTestNotifications();
+                console.log("Test notifications started:", result);
+                setIsTestRunning(true);
+                alert("Test notifications started! (30 seconds)");
+            }
+        } catch (error) {
+            console.error("Error toggling test notifications:", error);
+            alert("Error toggling test notifications: " + error.message);
         }
     };
 
@@ -227,12 +293,28 @@ function Homepage(props){
                                     <Text style={styles.debugButtonText}>Request Permissions</Text>
                                 </TouchableOpacity>
                                 
-                                <TouchableOpacity style={styles.debugButton} onPress={handleStart10MinNotifications}>
-                                    <Text style={styles.debugButtonText}>Start 10-Min Notifications</Text>
+                                <TouchableOpacity style={[styles.debugButton, isTestRunning && styles.debugButtonActive]} onPress={handleToggleTestNotifications}>
+                                    <Text style={styles.debugButtonText}>
+                                        {isTestRunning ? 'Stop Test (30s)' : 'Start Test (30s)'}
+                                    </Text>
                                 </TouchableOpacity>
                                 
-                                <TouchableOpacity style={styles.debugButton} onPress={handleStart1HourNotifications}>
-                                    <Text style={styles.debugButtonText}>Start 1-Hour Notifications</Text>
+                                <TouchableOpacity style={[styles.debugButton, is60SecRunning && styles.debugButtonActive]} onPress={handleToggle60SecNotifications}>
+                                    <Text style={styles.debugButtonText}>
+                                        {is60SecRunning ? 'Stop 60-Sec Notifications' : 'Start 60-Sec Notifications'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={[styles.debugButton, is10MinRunning && styles.debugButtonActive]} onPress={handleToggle10MinNotifications}>
+                                    <Text style={styles.debugButtonText}>
+                                        {is10MinRunning ? 'Stop 10-Min Notifications' : 'Start 10-Min Notifications'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={[styles.debugButton, is1HourRunning && styles.debugButtonActive]} onPress={handleToggle1HourNotifications}>
+                                    <Text style={styles.debugButtonText}>
+                                        {is1HourRunning ? 'Stop 1-Hour Notifications' : 'Start 1-Hour Notifications'}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -443,6 +525,9 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 16,
         fontWeight: "600",
+    },
+    debugButtonActive: {
+        backgroundColor: "#FF3B30",
     }
   })
 

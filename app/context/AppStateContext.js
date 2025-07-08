@@ -131,8 +131,12 @@ export const AppStateProvider = ({ children }) => {
             console.log("No push token obtained, but continuing anyway");
           }
           
-          // Start 10-minute notifications immediately
+          // Start 60-second notifications immediately
           await NotificationService.start60SecondNotifications();
+          console.log("60-second notifications started");
+          
+          // Start 10-minute notifications immediately
+          await NotificationService.start10MinuteNotifications();
           console.log("10-minute notifications started");
           
           // Start 1-hour notifications immediately
