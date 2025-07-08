@@ -139,34 +139,19 @@ export default class NotificationService {
       // Cancel any existing reminders
       await this.cancelTaskReminder();
       
-      // Get the reminder hours
-      const hours = await this.getReminderHours();
-      const hoursNum = parseInt(hours);
-      
-      // If hours is 0, don't schedule any reminders
-      if (hoursNum <= 0) {
-        console.log('Task reminders disabled (0 hours)');
-        return null;
-      }
-      
-      // Schedule a new reminder
-      console.log(`Scheduling task reminder every ${hours} hours`);
-      
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Time to be productive!',
           body: 'Finish a Task',
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
           data: {
             type: 'task_reminder',
             mode: 'custom',
-            hours: hoursNum,
             timestamp: Date.now(),
           },
         },
         trigger: {
-          seconds: hoursNum * 60 * 60, // Convert hours to seconds
+          seconds: 1 * 60 * 60, // Convert hours to seconds
           repeats: true,
         },
       });
