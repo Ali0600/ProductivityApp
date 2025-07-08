@@ -17,7 +17,7 @@ Notifications.setNotificationHandler({
 export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static SIXTY_SECOND_NOTIFICATION_ID_KEY = 'sixtySecondNotificationId';
-  static TWO_HOUR_NOTIFICATION_ID_KEY = 'twoHourNotificationId';
+  static ONE_HOUR_NOTIFICATION_ID_KEY = 'oneHourNotificationId';
   static SIXTY_SECOND_TIMER_ID = null;
 
   /**
@@ -274,66 +274,66 @@ export default class NotificationService {
   }
 
   /**
-   * Start 2-hour recurring notifications
+   * Start 1-hour recurring notifications
    * @returns {Promise<string|null>} - Notification ID or null if failed
    */
-  static async start2HourNotifications() {
+  static async start1HourNotifications() {
     try {
-      // Stop any existing 2-hour notifications
-      await this.stop2HourNotifications();
+      // Stop any existing 1-hour notifications
+      await this.stop1HourNotifications();
       
-      console.log('Starting 2-hour recurring notifications');
+      console.log('Starting 1-hour recurring notifications');
       
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: '2 Hour Notification',
+          title: '1 Hour Notification',
           body: 'Time for a productivity check-in!',
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
           data: {
-            type: '2_hour_reminder',
+            type: '1_hour_reminder',
             timestamp: Date.now(),
           },
         },
         trigger: {
-          seconds: 7200, // 2 hours (7200 seconds)
+          seconds: 3600, // 1 hours
           repeats: true,
         },
       });
       
       // Save the notification ID so we can cancel it later
-      await AsyncStorage.setItem(this.TWO_HOUR_NOTIFICATION_ID_KEY, notificationId);
+      await AsyncStorage.setItem(this.ONE_HOUR_NOTIFICATION_ID_KEY, notificationId);
       
-      console.log(`Scheduled 2-hour notification with ID: ${notificationId}`);
+      console.log(`Scheduled 1-hour notification with ID: ${notificationId}`);
       return notificationId;
     } catch (error) {
-      console.error('Error scheduling 2-hour notification:', error);
+      console.error('Error scheduling 1-hour notification:', error);
       return null;
     }
   }
 
   /**
-   * Stop the 2-hour recurring notifications
+   * Stop the 1-hour recurring notifications
    * @returns {Promise<boolean>} - Success status
    */
-  static async stop2HourNotifications() {
+  static async stop1HourNotifications() {
     try {
       // Get the saved notification ID
-      const notificationId = await AsyncStorage.getItem(this.TWO_HOUR_NOTIFICATION_ID_KEY);
+      const notificationId = await AsyncStorage.getItem(this.ONE_HOUR_NOTIFICATION_ID_KEY);
       
       if (notificationId) {
         // Cancel the notification
-        console.log(`Cancelling 2-hour notification with ID: ${notificationId}`);
+        console.log(`Cancelling 1-hour notification with ID: ${notificationId}`);
         await Notifications.cancelScheduledNotificationAsync(notificationId);
         
         // Clear the saved notification ID
-        await AsyncStorage.removeItem(this.TWO_HOUR_NOTIFICATION_ID_KEY);
-        console.log('2-hour notifications stopped');
+        await AsyncStorage.removeItem(this.ONE_HOUR_NOTIFICATION_ID_KEY_HOUR_NOTIFICATION_ID_KEY);
+        console.log('1-hour notifications stopped');
       }
       
       return true;
     } catch (error) {
-      console.error('Error stopping 2-hour notifications:', error);
+      console.error('Error stopping 1-hour notifications:', error);
       return false;
     }
   }
@@ -347,7 +347,7 @@ export default class NotificationService {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await AsyncStorage.removeItem(this.NOTIFICATION_ID_KEY);
       await AsyncStorage.removeItem(this.SIXTY_SECOND_NOTIFICATION_ID_KEY);
-      await AsyncStorage.removeItem(this.TWO_HOUR_NOTIFICATION_ID_KEY);
+      await AsyncStorage.removeItem(this.ONE_HOUR_NOTIFICATION_ID_KEY);
       console.log('All notifications cancelled');
       return true;
     } catch (error) {

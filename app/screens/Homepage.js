@@ -8,6 +8,7 @@ import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useAppState, useLists, useListTasks, useAppLoading, useNotifications } from '../hooks/useAppState';
+import NotificationService from '../services/notificationService';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -69,6 +70,42 @@ function Homepage(props){
     const saveNotificationSettings = () => {
         // For now, this is a placeholder - you can expand this later
         console.log("Notification settings saved");
+    };
+
+    const handleStart10MinNotifications = async () => {
+        try {
+            const result = await NotificationService.start60SecondNotifications();
+            console.log("10-minute notifications started:", result);
+            alert("10-minute notifications started!");
+        } catch (error) {
+            console.error("Error starting 10-minute notifications:", error);
+            alert("Error starting 10-minute notifications: " + error.message);
+        }
+    };
+
+    const handleStart1HourNotifications = async () => {
+        try {
+            const result = await NotificationService.scheduleTaskReminder();
+            console.log("1-hour notifications started:", result);
+            alert("1-hour notifications started!");
+        } catch (error) {
+            console.error("Error starting 1-hour notifications:", error);
+            alert("Error starting 1-hour notifications: " + error.message);
+        }
+    };
+
+    const handleRequestPermissions = async () => {
+        try {
+            const token = await NotificationService.registerForPushNotificationsAsync();
+            if (token) {
+                alert("Permissions granted! Token: " + token.substring(0, 20) + "...");
+            } else {
+                alert("Permission denied or no token received");
+            }
+        } catch (error) {
+            console.error("Error requesting permissions:", error);
+            alert("Error requesting permissions: " + error.message);
+        }
     };
 
     return(
@@ -182,6 +219,22 @@ function Homepage(props){
                     <Modal visible={settingsVisible} animationType="slide" transparent={true}>
                         <View style={styles.modalContent}>
                             <Text style={styles.settingsTitle}>Notification Settings</Text>
+                            
+                            <View style={styles.debugSection}>
+                                <Text style={styles.debugTitle}>Debug Notifications</Text>
+                                
+                                <TouchableOpacity style={styles.debugButton} onPress={handleRequestPermissions}>
+                                    <Text style={styles.debugButtonText}>Request Permissions</Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={styles.debugButton} onPress={handleStart10MinNotifications}>
+                                    <Text style={styles.debugButtonText}>Start 10-Min Notifications</Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={styles.debugButton} onPress={handleStart1HourNotifications}>
+                                    <Text style={styles.debugButtonText}>Start 1-Hour Notifications</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         <View style={styles.buttonWrapper}>
@@ -216,9 +269,9 @@ function Homepage(props){
                     <ScrollView>
                         {currentListData && currentListData.tasks && currentListData.tasks.length > 0 ? (
                             currentListData.tasks.map((task, index) => {
-                                console.log("Rendering task:", task);
+                                //console.log("Rendering task:", task);
                                 const taskId = task.id || `task-${currentList}-${index}`;
-                                console.log("Using taskId:", taskId);
+                                //console.log("Using taskId:", taskId);
                                 
                                 return (
                                     <Task
@@ -363,6 +416,33 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         marginRight: 10,
         textAlign: "center",
+    },
+    debugSection: {
+        padding: 20,
+        backgroundColor: "#f5f5f5",
+        margin: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#ddd",
+    },
+    debugTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 15,
+        color: "#333",
+    },
+    debugButton: {
+        backgroundColor: "#007AFF",
+        padding: 12,
+        borderRadius: 8,
+        marginVertical: 5,
+        alignItems: "center",
+    },
+    debugButtonText: {
+        color: "white",
+        fontSize: 16,
+        fontWeight: "600",
     }
   })
 

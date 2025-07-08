@@ -135,9 +135,9 @@ export const AppStateProvider = ({ children }) => {
           await NotificationService.start60SecondNotifications();
           console.log("10-minute notifications started");
           
-          // Start 2-hour notifications immediately
-          await NotificationService.start2HourNotifications();
-          console.log("2-hour notifications started");
+          // Start 1-hour notifications immediately
+          await NotificationService.start1HourNotifications();
+          console.log("1-hour notifications started");
         } catch (err) {
           console.error('Error setting up notifications:', err);
         }

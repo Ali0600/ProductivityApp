@@ -21,18 +21,18 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
     // If taskId is not provided, create a fallback ID
     const actualTaskId = taskId || `${text}-${index}`;
     
-    console.log("Task component received:", { 
-        text, 
-        index, 
-        currentListName, 
-        taskId: actualTaskId 
-    });
+    //console.log("Task component received:", { 
+    //    text, 
+    //    index, 
+    //    currentListName, 
+    //    taskId: actualTaskId 
+    //});
     
     // For debugging - show when component mounts
-    useEffect(() => {
-        console.log(`Task mounted: ${text} with ID: ${actualTaskId}`);
-        return () => console.log(`Task unmounted: ${text} with ID: ${actualTaskId}`);
-    }, []);
+    //useEffect(() => {
+    //    //console.log(`Task mounted: ${text} with ID: ${actualTaskId}`);
+    //    return () => console.log(`Task unmounted: ${text} with ID: ${actualTaskId}`);
+    //}, []);
 
     const closeSwipe = () => {
         if (swipeableRef.current) {
