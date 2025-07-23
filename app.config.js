@@ -63,7 +63,15 @@ export default {
     },
     "owner": "mhassan0600",
     "plugins": [
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "deploymentTarget": "13.0"
+          }
+        }
+      ],
       [
         "expo-notifications",
         {
