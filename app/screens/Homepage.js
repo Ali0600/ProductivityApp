@@ -9,6 +9,7 @@ import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useAppState, useLists, useListTasks, useAppLoading, useNotifications } from '../hooks/useAppState';
 import NotificationService from '../services/notificationService';
+import FirebaseService from '../services/firebaseService';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -22,6 +23,9 @@ function Homepage(props){
     const [is10MinRunning, setIs10MinRunning] = useState(false);
     const [is1HourRunning, setIs1HourRunning] = useState(false);
     const [isTestRunning, setIsTestRunning] = useState(false);
+    const [firebase60SecRunning, setFirebase60SecRunning] = useState(false);
+    const [firebase10MinRunning, setFirebase10MinRunning] = useState(false);
+    const [firebase1HourRunning, setFirebase1HourRunning] = useState(false);
     
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
@@ -174,6 +178,63 @@ function Homepage(props){
         }
     };
 
+    const handleToggleFirebase60Sec = async () => {
+        try {
+            if (firebase60SecRunning) {
+                const result = await FirebaseService.stopNotifications('60s');
+                console.log("Firebase 60s notifications stopped:", result);
+                setFirebase60SecRunning(false);
+                alert("Firebase 60s notifications stopped!");
+            } else {
+                const result = await FirebaseService.startNotifications('60s');
+                console.log("Firebase 60s notifications started:", result);
+                setFirebase60SecRunning(true);
+                alert("Firebase 60s notifications started!");
+            }
+        } catch (error) {
+            console.error("Error toggling Firebase 60s notifications:", error);
+            alert("Error toggling Firebase 60s notifications: " + error.message);
+        }
+    };
+
+    const handleToggleFirebase10Min = async () => {
+        try {
+            if (firebase10MinRunning) {
+                const result = await FirebaseService.stopNotifications('10m');
+                console.log("Firebase 10min notifications stopped:", result);
+                setFirebase10MinRunning(false);
+                alert("Firebase 10min notifications stopped!");
+            } else {
+                const result = await FirebaseService.startNotifications('10m');
+                console.log("Firebase 10min notifications started:", result);
+                setFirebase10MinRunning(true);
+                alert("Firebase 10min notifications started!");
+            }
+        } catch (error) {
+            console.error("Error toggling Firebase 10min notifications:", error);
+            alert("Error toggling Firebase 10min notifications: " + error.message);
+        }
+    };
+
+    const handleToggleFirebase1Hour = async () => {
+        try {
+            if (firebase1HourRunning) {
+                const result = await FirebaseService.stopNotifications('1h');
+                console.log("Firebase 1h notifications stopped:", result);
+                setFirebase1HourRunning(false);
+                alert("Firebase 1h notifications stopped!");
+            } else {
+                const result = await FirebaseService.startNotifications('1h');
+                console.log("Firebase 1h notifications started:", result);
+                setFirebase1HourRunning(true);
+                alert("Firebase 1h notifications started!");
+            }
+        } catch (error) {
+            console.error("Error toggling Firebase 1h notifications:", error);
+            alert("Error toggling Firebase 1h notifications: " + error.message);
+        }
+    };
+
     return(
         <View style={styles.container}>
             {isLoading ? (
@@ -293,6 +354,7 @@ function Homepage(props){
                                     <Text style={styles.debugButtonText}>Request Permissions</Text>
                                 </TouchableOpacity>
                                 
+                                <Text style={styles.sectionTitle}>Local Notifications (Current)</Text>
                                 <TouchableOpacity style={[styles.debugButton, isTestRunning && styles.debugButtonActive]} onPress={handleToggleTestNotifications}>
                                     <Text style={styles.debugButtonText}>
                                         {isTestRunning ? 'Stop Test (30s)' : 'Start Test (30s)'}
@@ -301,19 +363,38 @@ function Homepage(props){
                                 
                                 <TouchableOpacity style={[styles.debugButton, is60SecRunning && styles.debugButtonActive]} onPress={handleToggle60SecNotifications}>
                                     <Text style={styles.debugButtonText}>
-                                        {is60SecRunning ? 'Stop 60-Sec Notifications' : 'Start 60-Sec Notifications'}
+                                        {is60SecRunning ? 'Stop Local 60-Sec' : 'Start Local 60-Sec'}
                                     </Text>
                                 </TouchableOpacity>
                                 
                                 <TouchableOpacity style={[styles.debugButton, is10MinRunning && styles.debugButtonActive]} onPress={handleToggle10MinNotifications}>
                                     <Text style={styles.debugButtonText}>
-                                        {is10MinRunning ? 'Stop 10-Min Notifications' : 'Start 10-Min Notifications'}
+                                        {is10MinRunning ? 'Stop Local 10-Min' : 'Start Local 10-Min'}
                                     </Text>
                                 </TouchableOpacity>
                                 
                                 <TouchableOpacity style={[styles.debugButton, is1HourRunning && styles.debugButtonActive]} onPress={handleToggle1HourNotifications}>
                                     <Text style={styles.debugButtonText}>
-                                        {is1HourRunning ? 'Stop 1-Hour Notifications' : 'Start 1-Hour Notifications'}
+                                        {is1HourRunning ? 'Stop Local 1-Hour' : 'Start Local 1-Hour'}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <Text style={styles.sectionTitle}>Firebase Notifications (Background)</Text>
+                                <TouchableOpacity style={[styles.debugButton, firebase60SecRunning && styles.debugButtonActive]} onPress={handleToggleFirebase60Sec}>
+                                    <Text style={styles.debugButtonText}>
+                                        {firebase60SecRunning ? 'Stop Firebase 60-Sec' : 'Start Firebase 60-Sec'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={[styles.debugButton, firebase10MinRunning && styles.debugButtonActive]} onPress={handleToggleFirebase10Min}>
+                                    <Text style={styles.debugButtonText}>
+                                        {firebase10MinRunning ? 'Stop Firebase 10-Min' : 'Start Firebase 10-Min'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={[styles.debugButton, firebase1HourRunning && styles.debugButtonActive]} onPress={handleToggleFirebase1Hour}>
+                                    <Text style={styles.debugButtonText}>
+                                        {firebase1HourRunning ? 'Stop Firebase 1-Hour' : 'Start Firebase 1-Hour'}
                                     </Text>
                                 </TouchableOpacity>
                             </View>
@@ -528,6 +609,14 @@ const styles = StyleSheet.create({
     },
     debugButtonActive: {
         backgroundColor: "#FF3B30",
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#007AFF",
+        marginTop: 15,
+        marginBottom: 5,
+        textAlign: "center",
     }
   })
 

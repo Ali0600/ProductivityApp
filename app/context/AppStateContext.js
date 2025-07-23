@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageService from '../services/storageService';
 import NotificationService from '../services/notificationService';
+import FirebaseService from '../services/firebaseService';
 
 // Create the context
 export const AppStateContext = createContext();
@@ -131,17 +132,25 @@ export const AppStateProvider = ({ children }) => {
             console.log("No push token obtained, but continuing anyway");
           }
           
-          // Start 60-second notifications immediately
-          await NotificationService.start60SecondNotifications();
-          console.log("60-second notifications started");
-          
-          // Start 10-minute notifications immediately
-          await NotificationService.start10MinuteNotifications();
-          console.log("10-minute notifications started");
-          
-          // Start 1-hour notifications immediately
-          await NotificationService.start1HourNotifications();
-          console.log("1-hour notifications started");
+          // Initialize Firebase messaging
+          const fcmToken = await FirebaseService.initialize();
+          if (fcmToken) {
+            console.log("Firebase messaging initialized successfully");
+            
+            // Start Firebase notifications (server-side)
+            await FirebaseService.startNotifications('60s');
+            await FirebaseService.startNotifications('10m');
+            await FirebaseService.startNotifications('1h');
+            console.log("Firebase notifications started");
+          } else {
+            console.log("Firebase messaging failed to initialize, falling back to local notifications");
+            
+            // Fallback to local notifications if Firebase fails
+            await NotificationService.start60SecondNotifications();
+            await NotificationService.start10MinuteNotifications();
+            await NotificationService.start1HourNotifications();
+            console.log("Local notifications started as fallback");
+          }
         } catch (err) {
           console.error('Error setting up notifications:', err);
         }

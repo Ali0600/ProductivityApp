@@ -24,7 +24,8 @@
       "usesApnsToken": true,
       "entitlements": {
         "aps-environment": "production"
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
