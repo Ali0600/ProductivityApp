@@ -151,7 +151,7 @@ export default class NotificationService {
           },
         },
         trigger: {
-          seconds: 1 * 60 * 60, // Convert hours to seconds
+          seconds: 1 * 60 * 60,
           repeats: true,
         },
       });
