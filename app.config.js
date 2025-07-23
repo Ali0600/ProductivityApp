@@ -14,40 +14,65 @@ if (process.env.GOOGLE_SERVICES_PLIST && !fs.existsSync('./GoogleService-Info.pl
 
 export default {
   "expo": {
-    "name": "ProductivityApp",
-    "slug": "productivityapp",
-    "version": "1.0.0",
+    "name": "ADHD Habits",
+    "slug": "adhd-habits",
+    "version": "1.0.18",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./app/assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./app/assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mhassan0600.adhd-habits",
-      "buildNumber": "8",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "usesApnsToken": true,
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./app/assets/favicon.png"
     },
-    "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/messaging"
-    ],
     "extra": {
       "eas": {
-        "projectId": "0b2cf9e5-67a5-4cc0-9c50-1b51d5c5f16a"
+        "projectId": "3301b407-d8a6-4018-bf3c-4f1db722f073"
       }
-    }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3301b407-d8a6-4018-bf3c-4f1db722f073"
+    },
+    "owner": "mhassan0600",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./app/assets/icon.png",
+          "color": "#ffffff",
+          "sounds": []
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
+    ]
   }
 };
