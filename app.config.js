@@ -63,6 +63,7 @@ export default {
     },
     "owner": "mhassan0600",
     "plugins": [
+      "expo-build-properties",
       [
         "expo-notifications",
         {
