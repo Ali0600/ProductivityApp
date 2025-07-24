@@ -16,7 +16,7 @@ export default {
   "expo": {
     "name": "ADHD Habits",
     "slug": "adhd-habits",
-    "version": "1.0.18",
+    "version": "1.0.19",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
     "userInterfaceStyle": "light",
