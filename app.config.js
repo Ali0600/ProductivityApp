@@ -30,14 +30,14 @@ export default {
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mhassan0600.adhd-habits",
+      "bundleIdentifier": process.env.APP_VARIANT === "development" ? "com.mhassan0600.adhd-habits.dev" : "com.mhassan0600.adhd-habits",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"]
       },
       "usesApnsToken": true,
       "entitlements": {
-        "aps-environment": "production"
+        "aps-environment": process.env.APP_VARIANT === "development" ? "development" : "production"
       },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
