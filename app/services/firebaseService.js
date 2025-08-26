@@ -1,4 +1,13 @@
-import messaging from '@react-native-firebase/messaging';
+import messaging, { 
+  getMessaging, 
+  requestPermission, 
+  getToken,
+  onMessage,
+  setBackgroundMessageHandler,
+  onNotificationOpenedApp,
+  getInitialNotification,
+  AuthorizationStatus
+} from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default class FirebaseService {
@@ -12,10 +21,11 @@ export default class FirebaseService {
   static async initialize() {
     try {
       // Request permission for notifications
-      const authStatus = await messaging().requestPermission();
+      const messagingInstance = getMessaging();
+      const authStatus = await requestPermission(messagingInstance);
       const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        authStatus === AuthorizationStatus.AUTHORIZED ||
+        authStatus === AuthorizationStatus.PROVISIONAL;
 
       if (!enabled) {
         console.log('Firebase messaging permission denied');
@@ -23,7 +33,7 @@ export default class FirebaseService {
       }
 
       // Get FCM token
-      const token = await messaging().getToken();
+      const token = await getToken(messagingInstance);
       console.log('Firebase FCM Token:', token);
 
       // Save token to storage
@@ -47,26 +57,26 @@ export default class FirebaseService {
    */
   static setupMessageHandlers() {
     // Handle messages when app is in foreground
-    messaging().onMessage(async remoteMessage => {
+    const messagingInstance = getMessaging();
+    onMessage(messagingInstance, async remoteMessage => {
       console.log('Received foreground message:', remoteMessage);
       // You can show local notification here if needed
     });
 
     // Handle messages when app is in background/quit
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
+    setBackgroundMessageHandler(messagingInstance, async remoteMessage => {
       console.log('Received background message:', remoteMessage);
       // This runs in background - keep it minimal
     });
 
     // Handle notification tap when app is closed
-    messaging().onNotificationOpenedApp(remoteMessage => {
+    onNotificationOpenedApp(messagingInstance, remoteMessage => {
       console.log('Notification opened app:', remoteMessage);
       // Handle navigation based on notification data
     });
 
     // Handle notification tap when app is closed/killed
-    messaging()
-      .getInitialNotification()
+    getInitialNotification(messagingInstance)
       .then(remoteMessage => {
         if (remoteMessage) {
           console.log('Notification opened app from quit state:', remoteMessage);
