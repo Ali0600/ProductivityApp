@@ -118,47 +118,54 @@ export const AppStateProvider = ({ children }) => {
     saveCurrentList();
   }, [currentList, isLoading]);
 
-  // Setup notifications
+  // Setup notifications (run once when loading completes)
   useEffect(() => {
+    let isMounted = true;
+    let notificationsSetup = false;
+    
     const setupNotifications = async () => {
-      if (!isLoading) {
+      if (!isLoading && isMounted && !notificationsSetup) {
+        notificationsSetup = true;
         try {
+          console.log("[NOTIFICATIONS] Starting setup...");
+          
           // Register for notifications (only needs to be done once)
+          console.log("[NOTIFICATIONS] Registering for push notifications...");
           const token = await NotificationService.registerForPushNotificationsAsync();
           
-          if (token) {
-            console.log("Successfully registered for push notifications with token:", token);
+          if (token && isMounted) {
+            console.log("[NOTIFICATIONS] Successfully registered for push notifications");
           } else {
-            console.log("No push token obtained, but continuing anyway");
+            console.log("[NOTIFICATIONS] No push token obtained, but continuing anyway");
           }
           
-          // Initialize Firebase messaging
-          const fcmToken = await FirebaseService.initialize();
-          if (fcmToken) {
-            console.log("Firebase messaging initialized successfully");
-            
-            // Start Firebase notifications (server-side)
-            await FirebaseService.startNotifications('60s');
-            await FirebaseService.startNotifications('10m');
-            await FirebaseService.startNotifications('1h');
-            console.log("Firebase notifications started");
-          } else {
-            console.log("Firebase messaging failed to initialize, falling back to local notifications");
-            
-            // Fallback to local notifications if Firebase fails
-            await NotificationService.start60SecondNotifications();
-            await NotificationService.start10MinuteNotifications();
-            await NotificationService.start1HourNotifications();
-            console.log("Local notifications started as fallback");
+          // Initialize Firebase messaging (but don't auto-start notifications)
+          if (isMounted) {
+            console.log("[FIREBASE] Initializing Firebase messaging...");
+            const fcmToken = await FirebaseService.initialize();
+            if (fcmToken) {
+              console.log("[FIREBASE] Firebase messaging initialized successfully");
+            } else {
+              console.log("[FIREBASE] Firebase messaging failed to initialize");
+            }
           }
+          
+          console.log("[NOTIFICATIONS] Setup completed successfully");
         } catch (err) {
-          console.error('Error setting up notifications:', err);
+          console.error('[NOTIFICATIONS] Error during setup:', err);
+          console.error('[NOTIFICATIONS] Error stack:', err.stack);
+          notificationsSetup = false; // Allow retry on error
         }
       }
     };
     
     setupNotifications();
-  }, [isLoading]);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoading]); // Listen to isLoading changes
 
   // Add a new task to a list
   const addTask = useCallback((listName, task) => {

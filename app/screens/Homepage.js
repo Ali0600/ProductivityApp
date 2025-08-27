@@ -179,17 +179,28 @@ function Homepage(props){
     };
 
     const handleToggleFirebase60Sec = async () => {
+        console.log("handleToggleFirebase60Sec called, current state:", firebase60SecRunning);
         try {
             if (firebase60SecRunning) {
+                console.log("Stopping Firebase 60s notifications...");
                 const result = await FirebaseService.stopNotifications('60s');
                 console.log("Firebase 60s notifications stopped:", result);
-                setFirebase60SecRunning(false);
-                alert("Firebase 60s notifications stopped!");
+                if (result) {
+                    setFirebase60SecRunning(false);
+                    alert("Firebase 60s notifications stopped!");
+                } else {
+                    alert("Failed to stop Firebase 60s notifications");
+                }
             } else {
+                console.log("Starting Firebase 60s notifications...");
                 const result = await FirebaseService.startNotifications('60s');
                 console.log("Firebase 60s notifications started:", result);
-                setFirebase60SecRunning(true);
-                alert("Firebase 60s notifications started!");
+                if (result) {
+                    setFirebase60SecRunning(true);
+                    alert("Firebase 60s notifications started!");
+                } else {
+                    alert("Failed to start Firebase 60s notifications");
+                }
             }
         } catch (error) {
             console.error("Error toggling Firebase 60s notifications:", error);
@@ -352,6 +363,17 @@ function Homepage(props){
                                 
                                 <TouchableOpacity style={styles.debugButton} onPress={handleRequestPermissions}>
                                     <Text style={styles.debugButtonText}>Request Permissions</Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity style={styles.debugButton} onPress={async () => {
+                                    try {
+                                        const status = await FirebaseService.getStatus();
+                                        alert(`Firebase Status:\nHas Token: ${status.hasToken}\nToken: ${status.token || 'None'}\nServer: ${status.serverUrl}\nError: ${status.error || 'None'}`);
+                                    } catch (error) {
+                                        alert(`Error getting Firebase status: ${error.message}`);
+                                    }
+                                }}>
+                                    <Text style={styles.debugButtonText}>Check Firebase Status</Text>
                                 </TouchableOpacity>
                                 
                                 <Text style={styles.sectionTitle}>Local Notifications (Current)</Text>

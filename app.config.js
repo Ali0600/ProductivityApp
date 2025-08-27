@@ -72,14 +72,6 @@ export default {
           }
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./app/assets/icon.png",
-          "color": "#ffffff",
-          "sounds": []
-        }
-      ],
       "@react-native-firebase/app",
       "@react-native-firebase/messaging"
     ]
