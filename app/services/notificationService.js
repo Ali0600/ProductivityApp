@@ -4,9 +4,37 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
 
-// Note: TaskManager and background tasks are only needed for remote push notifications
-// Local notifications work in background automatically without additional setup
+// Background task name
+const BACKGROUND_NOTIFICATION_TASK = 'background-notification-task';
+
+// Define the background task
+TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async () => {
+  try {
+    console.log('Background notification task running...');
+    
+    // Send a notification every time the background task runs
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Productivity Reminder',
+        body: 'Stay focused! Time to check your tasks.',
+        sound: true,
+        data: {
+          type: 'background_reminder',
+          timestamp: Date.now(),
+        },
+      },
+      trigger: null, // Send immediately
+    });
+    
+    console.log('Background notification sent successfully');
+    return BackgroundFetch.BackgroundFetchResult.NewData;
+  } catch (error) {
+    console.error('Background notification task failed:', error);
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
 
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -22,6 +50,8 @@ Notifications.setNotificationHandler({
 export default class NotificationService {
   static REMINDER_HOURS_KEY = 'reminderHours';
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
+  static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
+  static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
 
   /**
    * Initialize background notification handling
@@ -373,6 +403,211 @@ export default class NotificationService {
     } catch (error) {
       console.error('Error sending immediate notification:', error);
       return null;
+    }
+  }
+
+  /**
+   * Schedule multiple recurring notifications (every minute for 60 minutes)
+   * @returns {Promise<string[]>} - Array of notification IDs
+   */
+  static async scheduleRecurringNotifications() {
+    try {
+      // Cancel any existing recurring notifications
+      await this.cancelRecurringNotifications();
+      
+      const notificationIds = [];
+      const currentTime = new Date();
+      
+      // Schedule notifications for the next 60 minutes
+      for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
+        const triggerTime = new Date(currentTime.getTime() + (i * 60 * 1000)); // Every minute
+        
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Productivity Reminder',
+            body: `Stay focused! Reminder #${i}`,
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+            data: {
+              type: 'recurring_reminder',
+              sequence: i,
+              timestamp: triggerTime.getTime(),
+            },
+          },
+          trigger: {
+            date: triggerTime,
+          },
+        });
+        
+        notificationIds.push(notificationId);
+      }
+      
+      // Save the notification IDs
+      await AsyncStorage.setItem(
+        this.RECURRING_NOTIFICATIONS_KEY, 
+        JSON.stringify(notificationIds)
+      );
+      
+      console.log(`Scheduled ${notificationIds.length} recurring notifications`);
+      return notificationIds;
+    } catch (error) {
+      console.error('Error scheduling recurring notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cancel all recurring notifications
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async cancelRecurringNotifications() {
+    try {
+      // Get saved notification IDs
+      const savedIds = await AsyncStorage.getItem(this.RECURRING_NOTIFICATIONS_KEY);
+      
+      if (savedIds) {
+        const notificationIds = JSON.parse(savedIds);
+        console.log(`Cancelling ${notificationIds.length} recurring notifications`);
+        
+        // Cancel all notifications
+        await Promise.all(
+          notificationIds.map(id => Notifications.cancelScheduledNotificationAsync(id))
+        );
+        
+        // Clear saved IDs
+        await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error cancelling recurring notifications:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check how many notifications are still scheduled and reschedule if needed
+   * @param {number} threshold - Minimum number of notifications to maintain
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async maintainRecurringNotifications(threshold = 10) {
+    try {
+      // Get all scheduled notifications
+      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      
+      // Filter for our recurring notifications
+      const recurringNotifications = scheduledNotifications.filter(
+        notification => notification.content.data?.type === 'recurring_reminder'
+      );
+      
+      console.log(`Currently have ${recurringNotifications.length} recurring notifications scheduled`);
+      
+      // If we're below threshold, reschedule
+      if (recurringNotifications.length < threshold) {
+        console.log(`Below threshold of ${threshold}, rescheduling notifications`);
+        await this.scheduleRecurringNotifications();
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error maintaining recurring notifications:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get status of recurring notifications
+   * @returns {Promise<Object>} - Status object with count and next notification time
+   */
+  static async getRecurringNotificationStatus() {
+    try {
+      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      const recurringNotifications = scheduledNotifications.filter(
+        notification => notification.content.data?.type === 'recurring_reminder'
+      );
+      
+      let nextNotificationTime = null;
+      if (recurringNotifications.length > 0) {
+        const nextNotification = recurringNotifications.reduce((earliest, current) => {
+          const currentTime = current.trigger?.date || current.trigger?.dateComponents;
+          const earliestTime = earliest.trigger?.date || earliest.trigger?.dateComponents;
+          return currentTime < earliestTime ? current : earliest;
+        });
+        nextNotificationTime = nextNotification.trigger?.date || nextNotification.trigger?.dateComponents;
+      }
+      
+      return {
+        count: recurringNotifications.length,
+        nextNotificationTime,
+        isActive: recurringNotifications.length > 0,
+      };
+    } catch (error) {
+      console.error('Error getting recurring notification status:', error);
+      return { count: 0, nextNotificationTime: null, isActive: false };
+    }
+  }
+
+  /**
+   * Start background notifications that run even when app is closed
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async startBackgroundNotifications() {
+    try {
+      console.log('Starting background notifications...');
+      
+      // Request permissions first
+      const { status } = await BackgroundFetch.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Background fetch permission not granted');
+        return false;
+      }
+      
+      // Register the background fetch task
+      await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
+        minimumInterval: 60, // 1 minute minimum interval (iOS may extend this)
+        stopOnTerminate: false, // Continue when app is killed
+        startOnBoot: true, // Start when device boots
+      });
+      
+      console.log('Background notifications started successfully');
+      return true;
+    } catch (error) {
+      console.error('Error starting background notifications:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Stop background notifications
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async stopBackgroundNotifications() {
+    try {
+      console.log('Stopping background notifications...');
+      
+      // Unregister the background task
+      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_NOTIFICATION_TASK);
+      
+      console.log('Background notifications stopped successfully');
+      return true;
+    } catch (error) {
+      console.error('Error stopping background notifications:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if background notifications are running
+   * @returns {Promise<boolean>} - Whether background notifications are active
+   */
+  static async isBackgroundNotificationsActive() {
+    try {
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFICATION_TASK);
+      return isRegistered;
+    } catch (error) {
+      console.error('Error checking background notification status:', error);
+      return false;
     }
   }
 }
