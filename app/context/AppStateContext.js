@@ -129,14 +129,14 @@ export const AppStateProvider = ({ children }) => {
         try {
           console.log("[NOTIFICATIONS] Starting setup...");
           
-          // Register for notifications (only needs to be done once)
-          console.log("[NOTIFICATIONS] Registering for push notifications...");
-          const token = await NotificationService.registerForPushNotificationsAsync();
+          // Register for local notifications permissions
+          console.log("[NOTIFICATIONS] Registering for local notifications...");
+          const hasPermission = await NotificationService.registerForLocalNotificationsAsync();
           
-          if (token && isMounted) {
-            console.log("[NOTIFICATIONS] Successfully registered for push notifications");
+          if (hasPermission && isMounted) {
+            console.log("[NOTIFICATIONS] Successfully registered for local notifications");
           } else {
-            console.log("[NOTIFICATIONS] No push token obtained, but continuing anyway");
+            console.log("[NOTIFICATIONS] No local notification permission, but continuing anyway");
           }
           
           // Initialize Firebase messaging (but don't auto-start notifications)

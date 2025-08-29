@@ -16,19 +16,28 @@ export default class FirebaseService {
       
       // Request permission for notifications
       const authStatus = await messaging().requestPermission();
+      console.log('[FIREBASE INIT] Permission request result:', authStatus);
+      console.log('[FIREBASE INIT] AUTHORIZED =', messaging.AuthorizationStatus.AUTHORIZED);
+      console.log('[FIREBASE INIT] PROVISIONAL =', messaging.AuthorizationStatus.PROVISIONAL);
+      console.log('[FIREBASE INIT] DENIED =', messaging.AuthorizationStatus.DENIED);
       
       const enabled =
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
+      console.log('[FIREBASE INIT] Notification permission enabled:', enabled);
+      
       if (!enabled) {
-        console.log('[FIREBASE INIT] Firebase messaging permission denied');
+        console.log('[FIREBASE INIT] Firebase messaging permission denied - cannot receive notifications');
         return null;
       }
 
       // Get FCM token
       const token = await messaging().getToken();
       console.log('[FIREBASE INIT] FCM Token received:', token ? token.substring(0, 20) + '...' : 'null');
+      console.log('[FIREBASE INIT] ===== FULL FCM TOKEN FOR COPY/PASTE =====');
+      console.log(token || 'NO TOKEN RECEIVED');
+      console.log('[FIREBASE INIT] =============================================');
 
       if (!token) {
         console.log('[FIREBASE INIT] No token received, aborting');
@@ -38,9 +47,9 @@ export default class FirebaseService {
       // Save token to storage
       await AsyncStorage.setItem(this.FCM_TOKEN_KEY, token);
 
-      console.log('[FIREBASE INIT] Skipping server registration to test stability...');
-      // Skip server registration completely for now - just get Firebase working
-      console.log('[FIREBASE INIT] Server registration skipped');
+      console.log('[FIREBASE INIT] Skipping server registration to test Firebase Console...');
+      // Skip server registration completely - testing Firebase Console direct notifications
+      console.log('[FIREBASE INIT] Server registration skipped - ready for Firebase Console test');
 
       console.log('[FIREBASE INIT] Setting up message handlers...');
       // Set up message handlers (only once)
@@ -69,17 +78,20 @@ export default class FirebaseService {
     try {
       console.log('[FIREBASE HANDLERS] Setting up message handlers...');
 
-      messaging().onMessage(async remoteMessage => {
+      const unsubscribe = messaging().onMessage(async remoteMessage => {
         console.log('[FIREBASE HANDLERS] ===== FOREGROUND MESSAGE RECEIVED =====');
+        console.log('[FIREBASE HANDLERS] THIS SHOULD APPEAR IF FIREBASE CONSOLE MESSAGE IS RECEIVED!');
         console.log('[FIREBASE HANDLERS] Full message:', JSON.stringify(remoteMessage, null, 2));
         console.log('[FIREBASE HANDLERS] Message ID:', remoteMessage.messageId);
         console.log('[FIREBASE HANDLERS] Notification:', remoteMessage.notification);
         console.log('[FIREBASE HANDLERS] Data:', remoteMessage.data);
         console.log('[FIREBASE HANDLERS] ========================================');
         
-        // Show alert for debugging, should be replaced with proper UI handling
-        alert(`Firebase notification received!\nTitle: ${remoteMessage.notification?.title}\nBody: ${remoteMessage.notification?.body}`);
+        // Show alert for debugging - this should pop up if message received
+        alert(`🔥 SUCCESS! Firebase notification received!\nTitle: ${remoteMessage.notification?.title}\nBody: ${remoteMessage.notification?.body}`);
       });
+      
+      console.log('[FIREBASE HANDLERS] Message handler registered successfully - listening for messages...');
       console.log('[FIREBASE HANDLERS] Foreground handler setup complete');
 
       console.log('[FIREBASE HANDLERS] Setting up background handler...');
@@ -90,7 +102,7 @@ export default class FirebaseService {
       // Handle notification tap when app is closed
       messaging().onNotificationOpenedApp(remoteMessage => {
         console.log('[FIREBASE HANDLERS] Notification opened app:', remoteMessage);
-        // Handle navigation based on notification data
+        alert(`Notification opened app: ${remoteMessage.notification?.title}`);
       });
       console.log('[FIREBASE HANDLERS] Notification opened handler setup complete');
 
@@ -100,6 +112,7 @@ export default class FirebaseService {
         .then(remoteMessage => {
           if (remoteMessage) {
             console.log('[FIREBASE HANDLERS] Notification opened app from quit state:', remoteMessage);
+            alert(`App opened from notification: ${remoteMessage.notification?.title}`);
           } else {
             console.log('[FIREBASE HANDLERS] No initial notification');
           }
@@ -295,6 +308,65 @@ export default class FirebaseService {
     } catch (error) {
       console.error('Error getting FCM token:', error);
       return null;
+    }
+  }
+
+  /**
+   * Manual permission check for debugging
+   */
+  static async checkPermissions() {
+    try {
+      console.log('[PERMISSION CHECK] Checking current permission status...');
+      const authStatus = await messaging().requestPermission();
+      console.log('[PERMISSION CHECK] Current status:', authStatus);
+      console.log('[PERMISSION CHECK] AUTHORIZED =', messaging.AuthorizationStatus.AUTHORIZED);
+      console.log('[PERMISSION CHECK] PROVISIONAL =', messaging.AuthorizationStatus.PROVISIONAL);  
+      console.log('[PERMISSION CHECK] DENIED =', messaging.AuthorizationStatus.DENIED);
+      
+      const enabled = authStatus === messaging.AuthorizationStatus.AUTHORIZED || 
+                     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      
+      alert(`Permission Status: ${enabled ? 'ENABLED' : 'DENIED'}\nStatus Code: ${authStatus}`);
+      return enabled;
+    } catch (error) {
+      console.error('[PERMISSION CHECK] Error:', error);
+      alert(`Permission check failed: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Test notification by triggering the handler manually
+   */
+  static async testNotificationHandler() {
+    try {
+      console.log('[TEST] Testing notification handler manually...');
+      
+      // Simulate a Firebase message
+      const testMessage = {
+        messageId: 'test-123',
+        notification: {
+          title: 'Test Notification',
+          body: 'This is a manual test of the notification handler'
+        },
+        data: {
+          test: 'true'
+        },
+        from: 'test-sender'
+      };
+      
+      console.log('[TEST] Simulating Firebase message...');
+      console.log('[FIREBASE HANDLERS] ===== FOREGROUND MESSAGE RECEIVED =====');
+      console.log('[FIREBASE HANDLERS] THIS SHOULD APPEAR IF FIREBASE CONSOLE MESSAGE IS RECEIVED!');
+      console.log('[FIREBASE HANDLERS] Full message:', JSON.stringify(testMessage, null, 2));
+      
+      alert(`🔥 SUCCESS! Test notification handler works!\nTitle: ${testMessage.notification.title}\nBody: ${testMessage.notification.body}`);
+      
+      return true;
+    } catch (error) {
+      console.error('[TEST] Error testing handler:', error);
+      alert(`Test failed: ${error.message}`);
+      return false;
     }
   }
 

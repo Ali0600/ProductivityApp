@@ -145,15 +145,25 @@ function Homepage(props){
 
     const handleRequestPermissions = async () => {
         try {
-            const token = await NotificationService.registerForPushNotificationsAsync();
-            if (token) {
-                alert("Permissions granted! Token: " + token.substring(0, 20) + "...");
+            const hasPermission = await NotificationService.registerForLocalNotificationsAsync();
+            if (hasPermission) {
+                alert("Local notification permissions granted!");
             } else {
-                alert("Permission denied or no token received");
+                alert("Local notification permission denied");
             }
         } catch (error) {
             console.error("Error requesting permissions:", error);
             alert("Error requesting permissions: " + error.message);
+        }
+    };
+
+    const handleTestNotificationHandler = async () => {
+        try {
+            console.log("Testing notification handler...");
+            await FirebaseService.testNotificationHandler();
+        } catch (error) {
+            console.error("Error testing notification handler:", error);
+            alert("Error testing handler: " + error.message);
         }
     };
 
@@ -192,15 +202,10 @@ function Homepage(props){
                     alert("Failed to stop Firebase 60s notifications");
                 }
             } else {
-                console.log("Starting Firebase 60s notifications...");
-                const result = await FirebaseService.startNotifications('60s');
-                console.log("Firebase 60s notifications started:", result);
-                if (result) {
-                    setFirebase60SecRunning(true);
-                    alert("Firebase 60s notifications started!");
-                } else {
-                    alert("Failed to start Firebase 60s notifications");
-                }
+                console.log("TEMPORARILY DISABLED - Testing Firebase Console direct notifications");
+                alert("Server notifications disabled - test Firebase Console instead");
+                // Temporarily disabled to test Firebase Console notifications
+                // const result = await FirebaseService.startNotifications('60s');
             }
         } catch (error) {
             console.error("Error toggling Firebase 60s notifications:", error);
@@ -216,10 +221,10 @@ function Homepage(props){
                 setFirebase10MinRunning(false);
                 alert("Firebase 10min notifications stopped!");
             } else {
-                const result = await FirebaseService.startNotifications('10m');
-                console.log("Firebase 10min notifications started:", result);
-                setFirebase10MinRunning(true);
-                alert("Firebase 10min notifications started!");
+                console.log("TEMPORARILY DISABLED - Testing Firebase Console direct notifications");
+                alert("Server notifications disabled - test Firebase Console instead");
+                // Temporarily disabled to test Firebase Console notifications
+                // const result = await FirebaseService.startNotifications('10m');
             }
         } catch (error) {
             console.error("Error toggling Firebase 10min notifications:", error);
@@ -235,10 +240,10 @@ function Homepage(props){
                 setFirebase1HourRunning(false);
                 alert("Firebase 1h notifications stopped!");
             } else {
-                const result = await FirebaseService.startNotifications('1h');
-                console.log("Firebase 1h notifications started:", result);
-                setFirebase1HourRunning(true);
-                alert("Firebase 1h notifications started!");
+                console.log("TEMPORARILY DISABLED - Testing Firebase Console direct notifications");
+                alert("Server notifications disabled - test Firebase Console instead");
+                // Temporarily disabled to test Firebase Console notifications
+                // const result = await FirebaseService.startNotifications('1h');
             }
         } catch (error) {
             console.error("Error toggling Firebase 1h notifications:", error);
@@ -363,6 +368,10 @@ function Homepage(props){
                                 
                                 <TouchableOpacity style={styles.debugButton} onPress={handleRequestPermissions}>
                                     <Text style={styles.debugButtonText}>Request Permissions</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={[styles.debugButton, {backgroundColor: '#FF6B6B'}]} onPress={handleTestNotificationHandler}>
+                                    <Text style={styles.debugButtonText}>🧪 Test Notification Handler</Text>
                                 </TouchableOpacity>
                                 
                                 <TouchableOpacity style={styles.debugButton} onPress={async () => {
