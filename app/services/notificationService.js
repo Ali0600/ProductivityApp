@@ -3,16 +3,17 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Configure LOCAL notifications to show when the app is in the foreground
-// Firebase notifications are handled separately in firebaseService.js
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// TEMPORARILY DISABLED - Testing Firebase notifications only
+// Expo's setNotificationHandler can interfere with Firebase notifications
+// TODO: Re-enable for local notifications only
+// Notifications.setNotificationHandler({
+//   handleNotification: async () => ({
+//     shouldShowBanner: true,
+//     shouldShowList: true,
+//     shouldPlaySound: true,
+//     shouldSetBadge: true,
+//   }),
+// });
 
 // This service handles LOCAL notifications only
 // Firebase push notifications are handled in firebaseService.js

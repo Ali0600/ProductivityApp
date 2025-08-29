@@ -78,21 +78,9 @@ export default class FirebaseService {
     try {
       console.log('[FIREBASE HANDLERS] Setting up message handlers...');
 
-      const unsubscribe = messaging().onMessage(async remoteMessage => {
-        console.log('[FIREBASE HANDLERS] ===== FOREGROUND MESSAGE RECEIVED =====');
-        console.log('[FIREBASE HANDLERS] THIS SHOULD APPEAR IF FIREBASE CONSOLE MESSAGE IS RECEIVED!');
-        console.log('[FIREBASE HANDLERS] Full message:', JSON.stringify(remoteMessage, null, 2));
-        console.log('[FIREBASE HANDLERS] Message ID:', remoteMessage.messageId);
-        console.log('[FIREBASE HANDLERS] Notification:', remoteMessage.notification);
-        console.log('[FIREBASE HANDLERS] Data:', remoteMessage.data);
-        console.log('[FIREBASE HANDLERS] ========================================');
-        
-        // Show alert for debugging - this should pop up if message received
-        alert(`🔥 SUCCESS! Firebase notification received!\nTitle: ${remoteMessage.notification?.title}\nBody: ${remoteMessage.notification?.body}`);
-      });
-      
-      console.log('[FIREBASE HANDLERS] Message handler registered successfully - listening for messages...');
-      console.log('[FIREBASE HANDLERS] Foreground handler setup complete');
+      // Foreground handler removed to avoid conflicts - handled in index.js
+      console.log('[FIREBASE HANDLERS] Foreground handler skipped - handled in index.js');
+      console.log('[FIREBASE HANDLERS] Message handler setup delegated to index.js');
 
       console.log('[FIREBASE HANDLERS] Setting up background handler...');
       // Note: Background handler is set up in index.js at root level
