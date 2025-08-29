@@ -15,20 +15,12 @@ export default function App() {
       // Initialize background notification handling
       await NotificationService.initializeBackgroundNotifications();
       
-      // Schedule background notifications
-      await NotificationService.scheduleHourlyNotifications(true);
+      // Schedule multiple local notifications (these work in background)
+      await NotificationService.scheduleRecurringNotifications();
       
-      // Start timer-based notifications for foreground
-      const interval = setInterval(async () => {
-        console.log('Sending timer notification...');
-        await NotificationService.sendImmediateNotification(
-          'Timer Notification',
-          'This is a test notification every 60 seconds'
-        );
-      }, 60000); // 60 seconds
-      
-      // Cleanup interval on unmount
-      return () => clearInterval(interval);
+      // Start background fetch task (for true background execution)
+      const backgroundStarted = await NotificationService.startBackgroundNotifications();
+      console.log('Background notifications started:', backgroundStarted);
     };
     
     initializeNotifications();

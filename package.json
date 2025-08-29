@@ -16,6 +16,7 @@
     "expo-constants": "~17.1.6",
     "expo-dev-client": "~5.2.4",
     "expo-device": "~7.1.4",
+    "expo-modules-core": "^2.5.0",
     "expo-notifications": "~0.31.1",
     "expo-task-manager": "^13.1.6",
     "expo-updates": "^0.28.12",
