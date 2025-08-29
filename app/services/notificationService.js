@@ -3,8 +3,8 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-// Configure notifications to show when the app is in the foreground
+// Configure LOCAL notifications to show when the app is in the foreground
+// Firebase notifications are handled separately in firebaseService.js
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -14,6 +14,8 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// This service handles LOCAL notifications only
+// Firebase push notifications are handled in firebaseService.js
 export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static SIXTY_SECOND_NOTIFICATION_ID_KEY = 'sixtySecondNotificationId';
@@ -74,60 +76,41 @@ export default class NotificationService {
   };
 
   /**
-   * Register for push notifications with enhanced TestFlight support
-   * @returns {Promise<string|null>} Expo push token or null if not available
+   * Register for LOCAL notification permissions only
+   * Firebase push notifications are handled separately
+   * @returns {Promise<boolean>} Permission status
    */
-  static async registerForPushNotificationsAsync() {
-    let token = null;
-    
-
-    if (Device.isDevice) {
-      // Check if we have permission
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      console.log('Initial notification permission status:', existingStatus);
-      
-      // If we don't have permission, ask for it with all permission types
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync({
-          ios: {
-            allowAlert: true,
-            allowBadge: true,
-            allowSound: true,
-            allowDisplayInCarPlay: true,
-            allowCriticalAlerts: true,
-            provideAppNotificationSettings: true,
-            allowProvisional: true,
-            allowAnnouncements: true,
-          },
-        });
-        finalStatus = status;
-        console.log('Requested notification permission status:', finalStatus);
-      }
-      
-      // If we still don't have permission, we can't send notifications
-      if (finalStatus !== 'granted') {
-        console.log('Failed to get notification permission!');
-        console.log('Permission status details:', await Notifications.getPermissionsAsync());
-        return null;
-      }
-      
-      try {
-        // Get the token
-        token = (await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig.extra?.eas?.projectId,
-        })).data;
-        console.log("Successfully obtained push token:", token);
-      } catch (tokenError) {
-        console.error("Error getting push token:", tokenError);
-        // Continue without a token, but at least don't crash
-      }
-    } else {
-      console.log('Must use physical device for Push Notifications');
+  static async registerForLocalNotificationsAsync() {
+    if (!Device.isDevice) {
+      console.log('Must use physical device for Local Notifications');
+      return false;
     }
 
-    return token;
+    // Check if we have permission
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    console.log('[LOCAL NOTIFICATIONS] Initial permission status:', existingStatus);
+    
+    // If we don't have permission, ask for it
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowDisplayInCarPlay: true,
+          allowCriticalAlerts: true,
+          provideAppNotificationSettings: true,
+          allowProvisional: true,
+          allowAnnouncements: true,
+        },
+      });
+      finalStatus = status;
+      console.log('[LOCAL NOTIFICATIONS] Requested permission status:', finalStatus);
+    }
+    
+    return finalStatus === 'granted';
   }
 
   /**

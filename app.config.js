@@ -33,7 +33,7 @@ export default {
       "bundleIdentifier": process.env.APP_VARIANT === "development" ? "com.mhassan0600.adhd-habits.dev" : "com.mhassan0600.adhd-habits",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification", "background-processing", "background-fetch"]
       },
       "usesApnsToken": true,
       "entitlements": {

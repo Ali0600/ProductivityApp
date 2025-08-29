@@ -1,13 +1,4 @@
-import messaging, { 
-  getMessaging, 
-  requestPermission, 
-  getToken,
-  onMessage,
-  setBackgroundMessageHandler,
-  onNotificationOpenedApp,
-  getInitialNotification,
-  AuthorizationStatus
-} from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default class FirebaseService {
@@ -24,13 +15,11 @@ export default class FirebaseService {
       console.log('[FIREBASE INIT] Starting Firebase initialization...');
       
       // Request permission for notifications
-      const messagingInstance = getMessaging();
-      
-      const authStatus = await requestPermission(messagingInstance);
+      const authStatus = await messaging().requestPermission();
       
       const enabled =
-        authStatus === AuthorizationStatus.AUTHORIZED ||
-        authStatus === AuthorizationStatus.PROVISIONAL;
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (!enabled) {
         console.log('[FIREBASE INIT] Firebase messaging permission denied');
@@ -38,7 +27,7 @@ export default class FirebaseService {
       }
 
       // Get FCM token
-      const token = await getToken(messagingInstance);
+      const token = await messaging().getToken();
       console.log('[FIREBASE INIT] FCM Token received:', token ? token.substring(0, 20) + '...' : 'null');
 
       if (!token) {
@@ -80,9 +69,7 @@ export default class FirebaseService {
     try {
       console.log('[FIREBASE HANDLERS] Setting up message handlers...');
 
-      const messagingInstance = getMessaging();
-      
-      onMessage(messagingInstance, async remoteMessage => {
+      messaging().onMessage(async remoteMessage => {
         console.log('[FIREBASE HANDLERS] ===== FOREGROUND MESSAGE RECEIVED =====');
         console.log('[FIREBASE HANDLERS] Full message:', JSON.stringify(remoteMessage, null, 2));
         console.log('[FIREBASE HANDLERS] Message ID:', remoteMessage.messageId);
@@ -96,16 +83,12 @@ export default class FirebaseService {
       console.log('[FIREBASE HANDLERS] Foreground handler setup complete');
 
       console.log('[FIREBASE HANDLERS] Setting up background handler...');
-      // Handle messages when app is in background/quit
-      setBackgroundMessageHandler(messagingInstance, async remoteMessage => {
-        console.log('[FIREBASE HANDLERS] Received background message:', remoteMessage);
-        // This runs in background - keep it minimal
-      });
+      // Note: Background handler is set up in index.js at root level
       console.log('[FIREBASE HANDLERS] Background handler setup complete');
 
       console.log('[FIREBASE HANDLERS] Setting up notification opened handler...');
       // Handle notification tap when app is closed
-      onNotificationOpenedApp(messagingInstance, remoteMessage => {
+      messaging().onNotificationOpenedApp(remoteMessage => {
         console.log('[FIREBASE HANDLERS] Notification opened app:', remoteMessage);
         // Handle navigation based on notification data
       });
@@ -113,7 +96,7 @@ export default class FirebaseService {
 
       console.log('[FIREBASE HANDLERS] Getting initial notification...');
       // Handle notification tap when app is closed/killed
-      getInitialNotification(messagingInstance)
+      messaging().getInitialNotification()
         .then(remoteMessage => {
           if (remoteMessage) {
             console.log('[FIREBASE HANDLERS] Notification opened app from quit state:', remoteMessage);
