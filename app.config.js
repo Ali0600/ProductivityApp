@@ -29,7 +29,6 @@ export default ({ config }) => {
         entitlements: {
           "aps-environment": isDevelopment ? "development" : "production"
         },
-        googleServicesFile: "./GoogleService-Info.plist"
       },
       android: {
         adaptiveIcon: {
