@@ -9,18 +9,24 @@ import { useEffect } from 'react';
 export default function App() {
   useEffect(() => {
     const initializeNotifications = async () => {
-      console.log('Initializing notifications...');
-      await NotificationService.registerForPushNotificationsAsync();
-      
-      // Initialize background notification handling
-      await NotificationService.initializeBackgroundNotifications();
-      
-      // Schedule multiple local notifications (these work in background)
-      await NotificationService.scheduleRecurringNotifications();
-      
-      // Start background fetch task (for true background execution)
-      const backgroundStarted = await NotificationService.startBackgroundNotifications();
-      console.log('Background notifications started:', backgroundStarted);
+      try {
+        console.log('🔔 APP.JS: Starting notification initialization...');
+        const token = await NotificationService.registerForPushNotificationsAsync();
+        await NotificationService.initializeBackgroundNotifications();
+        
+        // Send one immediate test notification
+        await NotificationService.sendImmediateNotification(
+          'App Started',
+          'Notifications are working!'
+        );
+        
+        // Schedule our test notification
+        await NotificationService.scheduleRecurringNotifications();
+        console.log('🔔 APP.JS: Scheduled recurring notifications');
+        
+      } catch (error) {
+        console.error('🔔 APP.JS: Error in notification setup:', error);
+      }
     };
     
     initializeNotifications();

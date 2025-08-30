@@ -418,28 +418,32 @@ export default class NotificationService {
       const notificationIds = [];
       const currentTime = new Date();
       
-      // Schedule notifications for the next 60 minutes
+      // Schedule recurring notifications using Date objects (WORKING SOLUTION)
+      console.log('Current time:', new Date().toLocaleString());
+      const startTime = Date.now() + 60000; // Start 1 minute from now
+      
       for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
-        const triggerTime = new Date(currentTime.getTime() + (i * 60 * 1000)); // Every minute
+        const triggerDate = new Date(startTime + ((i - 1) * 60000)); // Each minute after start
         
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Productivity Reminder',
-            body: `Stay focused! Reminder #${i}`,
+            body: `Be productive! This is reminder!`,
             sound: true,
-            priority: Notifications.AndroidNotificationPriority.HIGH,
             data: {
               type: 'recurring_reminder',
               sequence: i,
-              timestamp: triggerTime.getTime(),
+              scheduledFor: triggerDate.getTime(),
             },
           },
-          trigger: {
-            date: triggerTime,
-          },
+          trigger: triggerDate, // Use Date object directly - THIS WORKS!
         });
         
         notificationIds.push(notificationId);
+        
+        if (i <= 3) { // Log first 3 for debugging
+          console.log(`Scheduled notification ${i} for ${triggerDate.toLocaleString()}`);
+        }
       }
       
       // Save the notification IDs
@@ -448,7 +452,7 @@ export default class NotificationService {
         JSON.stringify(notificationIds)
       );
       
-      console.log(`Scheduled ${notificationIds.length} recurring notifications`);
+      console.log(`Scheduled ${notificationIds.length} recurring notifications starting in 1 minute`);
       return notificationIds;
     } catch (error) {
       console.error('Error scheduling recurring notifications:', error);
@@ -556,14 +560,7 @@ export default class NotificationService {
     try {
       console.log('Starting background notifications...');
       
-      // Request permissions first
-      const { status } = await BackgroundFetch.requestPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Background fetch permission not granted');
-        return false;
-      }
-      
-      // Register the background fetch task
+      // Register the background fetch task (no permission request needed for background fetch)
       await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
         minimumInterval: 60, // 1 minute minimum interval (iOS may extend this)
         stopOnTerminate: false, // Continue when app is killed
