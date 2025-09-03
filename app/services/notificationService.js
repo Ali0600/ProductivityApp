@@ -9,33 +9,6 @@ import * as BackgroundFetch from 'expo-background-fetch';
 // Background task name
 const BACKGROUND_NOTIFICATION_TASK = 'background-notification-task';
 
-// Define the background task
-TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async () => {
-  try {
-    console.log('Background notification task running...');
-    
-    // Send a notification every time the background task runs
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Productivity Reminder',
-        body: 'Stay focused! Time to check your tasks.',
-        sound: true,
-        data: {
-          type: 'background_reminder',
-          timestamp: Date.now(),
-        },
-      },
-      trigger: null, // Send immediately
-    });
-    
-    console.log('Background notification sent successfully');
-    return BackgroundFetch.BackgroundFetchResult.NewData;
-  } catch (error) {
-    console.error('Background notification task failed:', error);
-    return BackgroundFetch.BackgroundFetchResult.Failed;
-  }
-});
-
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -113,15 +86,15 @@ export default class NotificationService {
   static async registerForPushNotificationsAsync() {
     let token = null;
     
-    if (Platform.OS === 'android') {
-      // Set notification channel for Android
-      await Notifications.setNotificationChannelAsync('task-reminders', {
-        name: 'Task Reminders',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
+    //#if (Platform.OS === 'android') {
+    //  // Set notification channel for Android
+    //  await Notifications.setNotificationChannelAsync('task-reminders', {
+    //    name: 'Task Reminders',
+    //    importance: Notifications.AndroidImportance.MAX,
+    //    vibrationPattern: [0, 250, 250, 250],
+    //    lightColor: '#FF231F7C',
+    //  });
+    //}
 
     if (Device.isDevice) {
       // Check if we have permission
@@ -416,7 +389,6 @@ export default class NotificationService {
       await this.cancelRecurringNotifications();
       
       const notificationIds = [];
-      const currentTime = new Date();
       
       // Schedule recurring notifications using Date objects (WORKING SOLUTION)
       console.log('Current time:', new Date().toLocaleString());
