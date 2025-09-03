@@ -392,10 +392,10 @@ export default class NotificationService {
       
       // Schedule recurring notifications using Date objects (WORKING SOLUTION)
       console.log('Current time:', new Date().toLocaleString());
-      const startTime = Date.now() + 60000; // Start 1 minute from now
+      const startTime = Date.now() + 3600000; // Start 1 hour from now
       
       for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
-        const triggerDate = new Date(startTime + ((i - 1) * 60000)); // Each minute after start
+        const triggerDate = new Date(startTime + ((i - 1) * 3600000)); // Each hour after start
         
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
@@ -424,7 +424,7 @@ export default class NotificationService {
         JSON.stringify(notificationIds)
       );
       
-      console.log(`Scheduled ${notificationIds.length} recurring notifications starting in 1 minute`);
+      console.log(`Scheduled ${notificationIds.length} recurring notifications starting in 1 hour`);
       return notificationIds;
     } catch (error) {
       console.error('Error scheduling recurring notifications:', error);
