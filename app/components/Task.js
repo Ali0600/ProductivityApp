@@ -91,6 +91,34 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
         );
     };
 
+    const handleEdit = () => {
+        console.log("Edit pressed - Task ID:", actualTaskId, "Current text:", text);
+        Alert.prompt(
+            "Edit Task",
+            "Enter new task name:",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Save",
+                    onPress: (newText) => {
+                        if (newText && newText.trim()) {
+                            console.log("Saving new text:", newText.trim(), "for task ID:", actualTaskId);
+                            updateTaskInList(actualTaskId, { 
+                                text: newText.trim(),
+                                taskName: newText.trim()
+                            });
+                        }
+                    }
+                }
+            ],
+            "plain-text",
+            text
+        );
+    };
+
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <Swipeable 
@@ -110,10 +138,14 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
                     </TouchableOpacity>
                 )}
             >
-                <View style={styles.taskContainer}>
+                <TouchableOpacity 
+                    style={styles.taskContainer} 
+                    onLongPress={handleEdit}
+                    delayLongPress={500}
+                >
                     <Text>{text}</Text>
                     <Text>{creationTime.toString()}</Text>
-                </View>
+                </TouchableOpacity>
             </Swipeable>
         </GestureHandlerRootView>
     );
