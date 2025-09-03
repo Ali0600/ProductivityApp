@@ -22,7 +22,6 @@ function Homepage(props){
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
     const { addTaskToList, reorderTasksInList } = useListTasks(currentList);
-    const { reminderHours, updateReminderHours } = useNotifications();
 
     // This useEffect is used to update the current time every 10 seconds
     useEffect(() => {
@@ -66,16 +65,6 @@ function Homepage(props){
         setNewListName(''); // Clear input
         setTaskListVisible(false);
     };
-    
-    // Function to save notification settings
-    const saveNotificationSettings = () => {
-        updateReminderHours(reminderHours);
-    };
-    
-    // Update the reminder hours state when context value changes
-    useEffect(() => {
-        updateReminderHours(reminderHours);
-    }, [reminderHours]);
 
     return(
         <View style={styles.container}>
@@ -188,25 +177,6 @@ function Homepage(props){
                     <Modal visible={settingsVisible} animationType="slide" transparent={true}>
                         <View style={styles.modalContent}>
                             <Text style={styles.settingsTitle}>Notification Settings</Text>
-                            <Text style={styles.settingsLabel}>Reminder time (in hours):</Text>
-                            <TextInput
-                                style={styles.inputForms}
-                                onChangeText={text => {
-                                    // Ensure only valid numbers 0-24 are entered
-                                    const numValue = parseInt(text);
-                                    if ((text === '' || !isNaN(numValue)) && (numValue >= 0 && numValue <= 24 || text === '')) {
-                                        updateReminderHours(text);
-                                    }
-                                }}
-                                value={reminderHours}
-                                placeholder={'Enter hours (0-24)'}
-                                keyboardType="numeric"
-                                returnKeyType="done"
-                                maxLength={2}
-                            />
-                            <Text style={styles.settingsDescription}>
-                                Set to 0 to disable notifications. Otherwise, you'll get a "Finish a Task" reminder every {reminderHours} hour(s).
-                            </Text>
                         </View>
 
                         <View style={styles.buttonWrapper}>

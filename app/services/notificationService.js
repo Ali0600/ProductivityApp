@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
@@ -12,7 +11,8 @@ const BACKGROUND_NOTIFICATION_TASK = 'background-notification-task';
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -21,10 +21,62 @@ Notifications.setNotificationHandler({
 });
 
 export default class NotificationService {
-  static REMINDER_HOURS_KEY = 'reminderHours';
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
   static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
+
+  /**
+   * Initialize background notification handling
+   * @returns {Promise<void>}
+   */
+  static async initializeBackgroundNotifications() {
+    try {
+      console.log('Initializing background notification handlers...');
+
+      // Add notification response listeners (when user taps notification)
+      const subscription = Notifications.addNotificationResponseReceivedListener(
+        this.handleNotificationResponse
+      );
+
+      // Add notification received listeners (for foreground)
+      const receivedSubscription = Notifications.addNotificationReceivedListener(
+        this.handleNotificationReceived
+      );
+
+      console.log('Background notification handlers initialized successfully');
+      return { subscription, receivedSubscription };
+    } catch (error) {
+      console.error('Error initializing background notifications:', error);
+    }
+  }
+
+  /**
+   * Handle notification response (when user taps on notification)
+   * @param {Object} response - Notification response object
+   */
+  static handleNotificationResponse = (response) => {
+    console.log('Notification response received:', response);
+    
+    const { notification, userText } = response;
+    console.log('User tapped on notification:', notification.request.content.title);
+    
+    // Handle the notification tap
+    // You can navigate to specific screens, update app state, etc.
+    if (notification.request.content.data) {
+      console.log('Notification data:', notification.request.content.data);
+    }
+  };
+
+  /**
+   * Handle notification received (when app is in foreground)
+   * @param {Object} notification - Notification object
+   */
+  static handleNotificationReceived = (notification) => {
+    console.log('Notification received in foreground:', notification);
+    
+    // Handle foreground notification
+    // You can show custom UI, update app state, etc.
+  };
 
   /**
    * Initialize background notification handling
