@@ -211,9 +211,9 @@ function Homepage(props){
                     <ScrollView>
                         {currentListData && currentListData.tasks && currentListData.tasks.length > 0 ? (
                             currentListData.tasks.map((task, index) => {
-                                console.log("Rendering task:", task);
+                                //console.log("Rendering task:", task);
                                 const taskId = task.id || `task-${currentList}-${index}`;
-                                console.log("Using taskId:", taskId);
+                                //console.log("Using taskId:", taskId);
                                 
                                 return (
                                     <Task
