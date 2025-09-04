@@ -23,7 +23,7 @@ export default ({ config }) => {
         bundleIdentifier: process.env.APP_VARIANT === "development" ? "com.mhassan0600.adhd-habits.dev" : "com.mhassan0600.adhd-habits",
         infoPlist: {
           ITSAppUsesNonExemptEncryption: false,
-          UIBackgroundModes: ["remote-notification", "background-processing", "background-fetch"]
+          UIBackgroundModes: ["remote-notification"]
         },
         usesApnsToken: true,
         entitlements: {
@@ -58,14 +58,6 @@ export default ({ config }) => {
             icon: "./app/assets/icon.png",
             color: "#ffffff",
             sounds: []
-          }
-        ],
-        [
-          "expo-background-fetch",
-          {
-            ios: {
-              backgroundModes: ["background-fetch", "background-processing"]
-            }
           }
         ]
       ]
