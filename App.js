@@ -14,13 +14,6 @@ export default function App() {
         const token = await NotificationService.registerForPushNotificationsAsync();
         await NotificationService.initializeBackgroundNotifications();
         
-        // Send one immediate test notification
-        await NotificationService.sendImmediateNotification(
-          'App Started',
-          'Notifications are working!'
-        );
-        
-        // Schedule our test notification
         await NotificationService.scheduleRecurringNotifications();
         console.log('🔔 APP.JS: Scheduled recurring notifications');
         
