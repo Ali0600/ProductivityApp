@@ -169,7 +169,7 @@ export default class NotificationService {
    * @param {boolean} debugMode - If true, sends notifications every minute instead of hourly
    * @returns {Promise<string[]>} - Array of notification IDs
    */
-  static async scheduleHourlyNotifications(debugMode = true) {
+  static async scheduleHourlyNotifications(debugMode = false) {
     try {
       // Cancel any existing reminders
       await this.cancelAllNotifications();
