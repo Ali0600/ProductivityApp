@@ -334,24 +334,9 @@ export const AppStateProvider = ({ children }) => {
         // First try by ID
         const taskIndex = originalTasks.findIndex(task => task.id === taskId);
         
-        // If not found by ID, try a few fallbacks
         if (taskIndex === -1) {
           console.warn("Task not found by ID:", taskId);
-          
-          // Just force completion of the first task if ID isn't found
-          if (originalTasks.length > 0) {
-            const firstTask = {...originalTasks[0]};
-            originalTasks.splice(0, 1);
-            firstTask.creationTime = new Date();
-            originalTasks.push(firstTask);
-            
-            newLists[listIndex] = {
-              ...newLists[listIndex],
-              tasks: originalTasks
-            };
-          }
-          
-          return newLists;
+          return prevLists;
         }
         
         // Task found by ID - complete it
