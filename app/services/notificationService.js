@@ -79,59 +79,6 @@ export default class NotificationService {
   };
 
   /**
-   * Initialize background notification handling
-   * @returns {Promise<void>}
-   */
-  static async initializeBackgroundNotifications() {
-    try {
-      console.log('Initializing background notification handlers...');
-
-      // Add notification response listeners (when user taps notification)
-      const subscription = Notifications.addNotificationResponseReceivedListener(
-        this.handleNotificationResponse
-      );
-
-      // Add notification received listeners (for foreground)
-      const receivedSubscription = Notifications.addNotificationReceivedListener(
-        this.handleNotificationReceived
-      );
-
-      console.log('Background notification handlers initialized successfully');
-      return { subscription, receivedSubscription };
-    } catch (error) {
-      console.error('Error initializing background notifications:', error);
-    }
-  }
-
-  /**
-   * Handle notification response (when user taps on notification)
-   * @param {Object} response - Notification response object
-   */
-  static handleNotificationResponse = (response) => {
-    console.log('Notification response received:', response);
-    
-    const { notification, userText } = response;
-    console.log('User tapped on notification:', notification.request.content.title);
-    
-    // Handle the notification tap
-    // You can navigate to specific screens, update app state, etc.
-    if (notification.request.content.data) {
-      console.log('Notification data:', notification.request.content.data);
-    }
-  };
-
-  /**
-   * Handle notification received (when app is in foreground)
-   * @param {Object} notification - Notification object
-   */
-  static handleNotificationReceived = (notification) => {
-    console.log('Notification received in foreground:', notification);
-    
-    // Handle foreground notification
-    // You can show custom UI, update app state, etc.
-  };
-
-  /**
    * Register for push notifications
    * @returns {Promise<string|null>} Expo push token or null if not available
    */
