@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageService from '../services/storageService';
-import NotificationService from '../services/notificationService';
 
 // Create the context
 export const AppStateContext = createContext();
@@ -116,28 +115,6 @@ export const AppStateProvider = ({ children }) => {
     
     saveCurrentList();
   }, [currentList, isLoading]);
-
-  // Setup notifications
-  useEffect(() => {
-    const setupNotifications = async () => {
-      if (!isLoading) {
-        try {
-          // Register for notifications (only needs to be done once)
-          const token = await NotificationService.registerForPushNotificationsAsync();
-          
-          if (token) {
-            console.log("Successfully registered for push notifications with token:", token);
-          } else {
-            console.log("No push token obtained, but continuing anyway");
-          }
-        } catch (err) {
-          console.error('Error setting up notifications:', err);
-        }
-      }
-    };
-    
-    setupNotifications();
-  }, [isLoading]);
 
   // Add a new task to a list
   const addTask = useCallback((listName, task) => {
@@ -334,24 +311,9 @@ export const AppStateProvider = ({ children }) => {
         // First try by ID
         const taskIndex = originalTasks.findIndex(task => task.id === taskId);
         
-        // If not found by ID, try a few fallbacks
         if (taskIndex === -1) {
           console.warn("Task not found by ID:", taskId);
-          
-          // Just force completion of the first task if ID isn't found
-          if (originalTasks.length > 0) {
-            const firstTask = {...originalTasks[0]};
-            originalTasks.splice(0, 1);
-            firstTask.creationTime = new Date();
-            originalTasks.push(firstTask);
-            
-            newLists[listIndex] = {
-              ...newLists[listIndex],
-              tasks: originalTasks
-            };
-          }
-          
-          return newLists;
+          return prevLists;
         }
         
         // Task found by ID - complete it

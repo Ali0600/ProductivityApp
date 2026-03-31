@@ -7,7 +7,7 @@ import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import { useAppState, useLists, useListTasks, useAppLoading, useNotifications } from '../hooks/useAppState';
+import { useAppState, useLists, useListTasks, useAppLoading } from '../hooks/useAppState';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -186,8 +186,6 @@ function Homepage(props){
 
                             <TouchableOpacity>
                                 <AntDesignIcons name='checkcircle' size={60} onPress={() => {
-                                    // Save the settings
-                                    saveNotificationSettings();
                                     setSettingsVisible(false);
                                 }}/>
                             </TouchableOpacity>
