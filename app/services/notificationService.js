@@ -203,6 +203,7 @@ export default class NotificationService {
             },
           },
           trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: 60, // Every minute
             repeats: true,
           },
@@ -227,9 +228,9 @@ export default class NotificationService {
               },
             },
             trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
               hour: hour,
               minute: 0,
-              repeats: true,
             },
           });
           
@@ -313,6 +314,7 @@ export default class NotificationService {
           },
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: hoursNum * 60 * 60, // Convert hours to seconds
           repeats: true,
         },
@@ -407,7 +409,10 @@ export default class NotificationService {
               scheduledFor: triggerDate.getTime(),
             },
           },
-          trigger: triggerDate, // Use Date object directly - THIS WORKS!
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+          },
         });
         
         notificationIds.push(notificationId);
