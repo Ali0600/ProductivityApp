@@ -395,8 +395,8 @@ export const AppStateProvider = ({ children }) => {
     setLists(newLists);
   }, []);
 
-  // Context value
-  const contextValue = {
+  // Context value — memoized so consumers only re-render when actual data changes
+  const contextValue = useMemo(() => ({
     lists,
     currentList,
     currentListData,
@@ -413,7 +413,11 @@ export const AppStateProvider = ({ children }) => {
     completeTask,
     completeTaskByIndex,
     updateLists,
-  };
+  }), [
+    lists, currentList, currentListData, isLoading, error,
+    addTask, removeTask, removeTaskByIndex, updateTask, reorderTasks,
+    addList, removeList, switchList, completeTask, completeTaskByIndex, updateLists,
+  ]);
 
   return (
     <AppStateContext.Provider value={contextValue}>
