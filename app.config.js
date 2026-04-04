@@ -15,9 +15,6 @@ export default ({ config }) => {
         resizeMode: "contain",
         backgroundColor: "#ffffff"
       },
-      assetBundlePatterns: [
-        "**/*"
-      ],
       ios: {
         supportsTablet: true,
         bundleIdentifier: process.env.APP_VARIANT === "development" ? "com.mhassan0600.adhd-habits.dev" : "com.mhassan0600.adhd-habits",
@@ -25,7 +22,6 @@ export default ({ config }) => {
           ITSAppUsesNonExemptEncryption: false,
           UIBackgroundModes: ["remote-notification"]
         },
-        usesApnsToken: true,
         entitlements: {
           "aps-environment": isDevelopment ? "development" : "production"
         },

@@ -10,8 +10,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
   }),
 });
 
@@ -214,7 +212,6 @@ export default class NotificationService {
               title: 'Time to be productive!',
               body: 'Finish a Task',
               sound: true,
-              priority: Notifications.AndroidNotificationPriority.HIGH,
               data: {
                 type: 'task_reminder',
                 mode: 'hourly',
@@ -300,7 +297,6 @@ export default class NotificationService {
           title: 'Time to be productive!',
           body: 'Finish a Task',
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
           data: {
             type: 'task_reminder',
             mode: 'custom',
