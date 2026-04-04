@@ -2,11 +2,6 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
-
-// Background task name
-const BACKGROUND_NOTIFICATION_TASK = 'background-notification-task';
 
 // Configure notifications to show when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -15,8 +10,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
   }),
 });
 
@@ -203,6 +196,7 @@ export default class NotificationService {
             },
           },
           trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: 60, // Every minute
             repeats: true,
           },
@@ -218,7 +212,6 @@ export default class NotificationService {
               title: 'Time to be productive!',
               body: 'Finish a Task',
               sound: true,
-              priority: Notifications.AndroidNotificationPriority.HIGH,
               data: {
                 type: 'task_reminder',
                 mode: 'hourly',
@@ -227,9 +220,9 @@ export default class NotificationService {
               },
             },
             trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
               hour: hour,
               minute: 0,
-              repeats: true,
             },
           });
           
@@ -304,7 +297,6 @@ export default class NotificationService {
           title: 'Time to be productive!',
           body: 'Finish a Task',
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
           data: {
             type: 'task_reminder',
             mode: 'custom',
@@ -313,6 +305,7 @@ export default class NotificationService {
           },
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: hoursNum * 60 * 60, // Convert hours to seconds
           repeats: true,
         },
@@ -407,7 +400,10 @@ export default class NotificationService {
               scheduledFor: triggerDate.getTime(),
             },
           },
-          trigger: triggerDate, // Use Date object directly - THIS WORKS!
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+          },
         });
         
         notificationIds.push(notificationId);
@@ -520,62 +516,6 @@ export default class NotificationService {
     } catch (error) {
       console.error('Error getting recurring notification status:', error);
       return { count: 0, nextNotificationTime: null, isActive: false };
-    }
-  }
-
-  /**
-   * Start background notifications that run even when app is closed
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async startBackgroundNotifications() {
-    try {
-      console.log('Starting background notifications...');
-      
-      // Register the background fetch task (no permission request needed for background fetch)
-      await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
-        minimumInterval: 60, // 1 minute minimum interval (iOS may extend this)
-        stopOnTerminate: false, // Continue when app is killed
-        startOnBoot: true, // Start when device boots
-      });
-      
-      console.log('Background notifications started successfully');
-      return true;
-    } catch (error) {
-      console.error('Error starting background notifications:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Stop background notifications
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async stopBackgroundNotifications() {
-    try {
-      console.log('Stopping background notifications...');
-      
-      // Unregister the background task
-      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_NOTIFICATION_TASK);
-      
-      console.log('Background notifications stopped successfully');
-      return true;
-    } catch (error) {
-      console.error('Error stopping background notifications:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Check if background notifications are running
-   * @returns {Promise<boolean>} - Whether background notifications are active
-   */
-  static async isBackgroundNotificationsActive() {
-    try {
-      const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFICATION_TASK);
-      return isRegistered;
-    } catch (error) {
-      console.error('Error checking background notification status:', error);
-      return false;
     }
   }
 }

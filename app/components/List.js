@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useLists } from '../hooks/useAppState';
 
 
@@ -42,29 +41,27 @@ const List = ({ text, index, drag, isActive, onListPress }) => {
     };
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <Swipeable 
-                ref={swipeableRef}
-                renderRightActions={() => (
-                    <RightSwipeComponent 
-                        listName={listName} 
-                        closeSwipe={closeSwipe}
-                    />
-                )}
+        <Swipeable
+            ref={swipeableRef}
+            renderRightActions={() => (
+                <RightSwipeComponent
+                    listName={listName}
+                    closeSwipe={closeSwipe}
+                />
+            )}
+        >
+            <TouchableOpacity
+                onLongPress={drag}
+                onPress={handlePress}
+                activeOpacity={0.7}
+                style={[styles.listContainer, isActive && styles.activeItem]}
             >
-                <TouchableOpacity 
-                    onLongPress={drag} 
-                    onPress={handlePress}
-                    activeOpacity={0.7}
-                    style={[styles.listContainer, isActive && styles.activeItem]}
-                >
-                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                        <View style={styles.dragHandle} />
-                        <Text>{text}</Text>
-                    </View>
-                </TouchableOpacity>
-            </Swipeable>
-        </GestureHandlerRootView>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <View style={styles.dragHandle} />
+                    <Text>{text}</Text>
+                </View>
+            </TouchableOpacity>
+        </Swipeable>
     );
 }
 

@@ -1,7 +1,6 @@
 import { useRef, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
-import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useListTasks } from '../hooks/useAppState';
 
 // Delete these component definitions as we're now implementing the functionality directly in the Task component
@@ -120,34 +119,32 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
     };
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <Swipeable 
-                ref={swipeableRef}
-                renderRightActions={() => (
-                    <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
-                        <View>
-                            <Text style={styles.actionText}>Delete</Text>
-                        </View>
-                    </TouchableOpacity>
-                )} 
-                renderLeftActions={() => (
-                    <TouchableOpacity style={styles.completeBox} onPress={handleComplete}>
-                        <View>
-                            <Text style={styles.actionText}>Complete</Text>
-                        </View>
-                    </TouchableOpacity>
-                )}
-            >
-                <TouchableOpacity 
-                    style={styles.taskContainer} 
-                    onLongPress={handleEdit}
-                    delayLongPress={500}
-                >
-                    <Text>{text}</Text>
-                    <Text>{creationTime.toString()}</Text>
+        <Swipeable
+            ref={swipeableRef}
+            renderRightActions={() => (
+                <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
+                    <View>
+                        <Text style={styles.actionText}>Delete</Text>
+                    </View>
                 </TouchableOpacity>
-            </Swipeable>
-        </GestureHandlerRootView>
+            )}
+            renderLeftActions={() => (
+                <TouchableOpacity style={styles.completeBox} onPress={handleComplete}>
+                    <View>
+                        <Text style={styles.actionText}>Complete</Text>
+                    </View>
+                </TouchableOpacity>
+            )}
+        >
+            <TouchableOpacity
+                style={styles.taskContainer}
+                onLongPress={handleEdit}
+                delayLongPress={500}
+            >
+                <Text>{text}</Text>
+                <Text>{creationTime.toString()}</Text>
+            </TouchableOpacity>
+        </Swipeable>
     );
 }
 

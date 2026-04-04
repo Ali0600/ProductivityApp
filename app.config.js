@@ -6,7 +6,7 @@ export default ({ config }) => {
     expo: {
       name: "ADHD Habits",
       slug: "adhd-habits",
-      version: "1.0.25",
+      version: "1.0.26",
       orientation: "portrait",
       icon: "./app/assets/icon.png",
       userInterfaceStyle: "light",
@@ -15,9 +15,6 @@ export default ({ config }) => {
         resizeMode: "contain",
         backgroundColor: "#ffffff"
       },
-      assetBundlePatterns: [
-        "**/*"
-      ],
       ios: {
         supportsTablet: true,
         bundleIdentifier: process.env.APP_VARIANT === "development" ? "com.mhassan0600.adhd-habits.dev" : "com.mhassan0600.adhd-habits",
@@ -25,7 +22,6 @@ export default ({ config }) => {
           ITSAppUsesNonExemptEncryption: false,
           UIBackgroundModes: ["remote-notification"]
         },
-        usesApnsToken: true,
         entitlements: {
           "aps-environment": isDevelopment ? "development" : "production"
         },
@@ -45,7 +41,7 @@ export default ({ config }) => {
         }
       },
       runtimeVersion: {
-        policy: "sdkVersion"
+        policy: "fingerprint"
       },
       updates: {
         url: "https://u.expo.dev/3301b407-d8a6-4018-bf3c-4f1db722f073"
