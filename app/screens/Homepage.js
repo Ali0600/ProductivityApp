@@ -7,6 +7,7 @@ import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAppState, useLists, useListTasks, useAppLoading } from '../hooks/useAppState';
 
 function Homepage(props){
@@ -101,6 +102,7 @@ function Homepage(props){
                     </Modal>
 
                     <Modal visible={menuVisible} animationType="slide" transparent={true}>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
                         <SafeAreaView style={styles.menuContainer}>
                             <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
                                 <AntDesignIcons 
@@ -143,6 +145,7 @@ function Homepage(props){
                                 />
                             </View>
                         </SafeAreaView>
+                      </GestureHandlerRootView>
 
                         <Modal visible={taskListVisible} animationType="slide" transparent={true}>
                             <View style={styles.taskListModal}>
