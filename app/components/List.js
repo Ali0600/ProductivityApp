@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Swipeable from 'react-native-gesture-handler/Swipeable';
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useLists } from '../hooks/useAppState';
 
 

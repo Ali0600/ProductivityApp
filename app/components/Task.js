@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
-import Swipeable from 'react-native-gesture-handler/Swipeable';
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useListTasks } from '../hooks/useAppState';
 
 // Delete these component definitions as we're now implementing the functionality directly in the Task component
