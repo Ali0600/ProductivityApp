@@ -87,12 +87,12 @@ function Homepage(props){
                         </View>
 
                         <View style={styles.buttonWrapper}>
-                            <TouchableOpacity>
-                                <AntDesignIcons name='minuscircle' size={60} onPress={() => setModalVisible(false) }/>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <AntDesignIcons name='minuscircle' size={60} />
                             </TouchableOpacity>
 
-                            <TouchableOpacity>
-                                <AntDesignIcons name='pluscircle' size={60} onPress={handleAddTask}/>
+                            <TouchableOpacity onPress={handleAddTask}>
+                                <AntDesignIcons name='pluscircle' size={60} />
                             </TouchableOpacity>
                         </View>
                     </Modal>
@@ -101,20 +101,15 @@ function Homepage(props){
                       <GestureHandlerRootView style={{ flex: 1 }}>
                         <SafeAreaView style={styles.menuContainer}>
                             <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
-                                <AntDesignIcons 
-                                    name='closecircle' 
-                                    size={40} 
-                                    backgroundColor='white' 
-                                    onPress={() => setMenuPanalVisible(false)}
-                                />
+                                <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
+                                    <AntDesignIcons name='closecircle' size={40} />
+                                </TouchableOpacity>
 
                                 <Text backgroundColor="yellow">Lists</Text>
 
-                                <AntDesignIcons 
-                                    name='pluscircle' 
-                                    size={40} 
-                                    onPress={() => setTaskListVisible(true)}
-                                />
+                                <TouchableOpacity onPress={() => setTaskListVisible(true)}>
+                                    <AntDesignIcons name='pluscircle' size={40} />
+                                </TouchableOpacity>
                             </View>
                             
                             <View style={styles.menuLists}>
@@ -154,20 +149,12 @@ function Homepage(props){
                             </View>
 
                             <View style={styles.buttonWrapper}>
-                                <TouchableOpacity>
-                                    <AntDesignIcons 
-                                        name='minuscircle' 
-                                        size={60} 
-                                        onPress={() => setTaskListVisible(false)}
-                                    />
+                                <TouchableOpacity onPress={() => setTaskListVisible(false)}>
+                                    <AntDesignIcons name='minuscircle' size={60} />
                                 </TouchableOpacity>
 
-                                <TouchableOpacity>
-                                    <AntDesignIcons 
-                                        name='pluscircle' 
-                                        size={60} 
-                                        onPress={handleAddNewList}
-                                    />
+                                <TouchableOpacity onPress={handleAddNewList}>
+                                    <AntDesignIcons name='pluscircle' size={60} />
                                 </TouchableOpacity>
                             </View>
                         </Modal>
@@ -179,22 +166,20 @@ function Homepage(props){
                         </View>
 
                         <View style={styles.buttonWrapper}>
-                            <TouchableOpacity>
-                                <AntDesignIcons name='closecircle' size={60} onPress={() => setSettingsVisible(false)} />
+                            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                                <AntDesignIcons name='closecircle' size={60} />
                             </TouchableOpacity>
 
-                            <TouchableOpacity>
-                                <AntDesignIcons name='checkcircle' size={60} onPress={() => {
-                                    setSettingsVisible(false);
-                                }}/>
+                            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                                <AntDesignIcons name='checkcircle' size={60} />
                             </TouchableOpacity>
                         </View>
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
                         <View flexDirection="row" justifyContent="space-between">
-                            <TouchableOpacity>
-                               <EntypoIcons name='menu' size={40} onPress={() => setMenuPanalVisible(true)}/>
+                            <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
+                               <EntypoIcons name='menu' size={40} />
                             </TouchableOpacity>
 
                             <Text style={styles.textFont}>ADHDone</Text>
@@ -227,12 +212,8 @@ function Homepage(props){
                     />
 
                     <View style={styles.buttonWrapper}>
-                        <TouchableOpacity>
-                            <AntDesignIcons 
-                                name='pluscircle' 
-                                size={60} 
-                                onPress={() => setModalVisible(true)}
-                            />
+                        <TouchableOpacity onPress={() => setModalVisible(true)}>
+                            <AntDesignIcons name='pluscircle' size={60} />
                         </TouchableOpacity>
                     </View>
 
