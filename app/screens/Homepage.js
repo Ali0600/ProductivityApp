@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
@@ -15,10 +15,9 @@ function Homepage(props){
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [settingsVisible, setSettingsVisible] = useState(false);
-    const [currentTime, setCurrentTime] = useState(moment());
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
-    
+
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
@@ -30,24 +29,15 @@ function Homepage(props){
         completeTaskInListByIndex,
     } = useListTasks(currentList);
 
-    // This useEffect is used to update the current time every 10 seconds
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            setCurrentTime(moment());
-        }, 10000);
-
-        return() => clearInterval(intervalId);
-    }, []);
-
     const handleAddTask = () => {
         if (!task.trim()) return;
-        
+
         const newTask = {
             id: `task-${Date.now()}`, // Create a reliable unique ID
-            taskName: task, 
-            creationTime: currentTime.toDate()
+            taskName: task,
+            creationTime: new Date()
         };
-        
+
         console.log("Adding new task:", newTask);
         addTaskToList(newTask);
         setTask(''); // Clear input
