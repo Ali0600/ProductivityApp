@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
@@ -209,30 +209,24 @@ function Homepage(props){
                         </View>
                     </SafeAreaView>
 
-                    <ScrollView>
-                        {currentListData && currentListData.tasks && currentListData.tasks.length > 0 ? (
-                            currentListData.tasks.map((task, index) => {
-                                //console.log("Rendering task:", task);
-                                const taskId = task.id || `task-${currentList}-${index}`;
-                                //console.log("Using taskId:", taskId);
-                                
-                                return (
-                                    <Task
-                                        text={task.taskName}
-                                        key={taskId}
-                                        index={index}
-                                        taskId={taskId}
-                                        creationTime={moment(task.creationTime).fromNow()}
-                                        currentListName={currentList}
-                                    />
-                                );
-                            })
-                        ) : (
+                    <FlatList
+                        data={currentListData?.tasks ?? []}
+                        keyExtractor={(item, index) => item.id || `task-${currentList}-${index}`}
+                        renderItem={({ item, index }) => (
+                            <Task
+                                text={item.taskName}
+                                index={index}
+                                taskId={item.id || `task-${currentList}-${index}`}
+                                creationTime={moment(item.creationTime).fromNow()}
+                                currentListName={currentList}
+                            />
+                        )}
+                        ListEmptyComponent={
                             <Text style={{color: 'white', padding: 20, textAlign: 'center'}}>
                                 No tasks in this list
                             </Text>
-                        )}
-                    </ScrollView>
+                        }
+                    />
 
                     <View style={styles.buttonWrapper}>
                         <TouchableOpacity>
