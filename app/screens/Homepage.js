@@ -22,7 +22,13 @@ function Homepage(props){
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
-    const { addTaskToList, reorderTasksInList } = useListTasks(currentList);
+    const {
+        addTaskToList,
+        reorderTasksInList,
+        removeTaskFromListByIndex,
+        updateTaskInList,
+        completeTaskInListByIndex,
+    } = useListTasks(currentList);
 
     // This useEffect is used to update the current time every 10 seconds
     useEffect(() => {
@@ -218,7 +224,9 @@ function Homepage(props){
                                 index={index}
                                 taskId={item.id || `task-${currentList}-${index}`}
                                 creationTime={moment(item.creationTime).fromNow()}
-                                currentListName={currentList}
+                                onRemove={removeTaskFromListByIndex}
+                                onComplete={completeTaskInListByIndex}
+                                onUpdate={updateTaskInList}
                             />
                         )}
                         ListEmptyComponent={

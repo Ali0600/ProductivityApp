@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useCallback } from 'react';
 import { AppStateContext } from '../context/AppStateContext';
 
 /**
@@ -35,15 +35,15 @@ export const useListTasks = (listName) => {
   // Find the specified list
   const list = lists.find(list => list.listName === listName);
   const tasks = list ? list.tasks : [];
-  
-  // Task management functions
-  const addTaskToList = (task) => addTask(listName, task);
-  const removeTaskFromList = (taskId) => removeTask(listName, taskId);
-  const removeTaskFromListByIndex = (index) => removeTaskByIndex(listName, index);
-  const updateTaskInList = (taskId, updates) => updateTask(listName, taskId, updates);
-  const reorderTasksInList = (reorderedTasks) => reorderTasks(listName, reorderedTasks);
-  const completeTaskInList = (taskId) => completeTask(listName, taskId);
-  const completeTaskInListByIndex = (index) => completeTaskByIndex(listName, index);
+
+  // Task management functions — memoized so consumers can use them as stable props
+  const addTaskToList = useCallback((task) => addTask(listName, task), [addTask, listName]);
+  const removeTaskFromList = useCallback((taskId) => removeTask(listName, taskId), [removeTask, listName]);
+  const removeTaskFromListByIndex = useCallback((index) => removeTaskByIndex(listName, index), [removeTaskByIndex, listName]);
+  const updateTaskInList = useCallback((taskId, updates) => updateTask(listName, taskId, updates), [updateTask, listName]);
+  const reorderTasksInList = useCallback((reorderedTasks) => reorderTasks(listName, reorderedTasks), [reorderTasks, listName]);
+  const completeTaskInList = useCallback((taskId) => completeTask(listName, taskId), [completeTask, listName]);
+  const completeTaskInListByIndex = useCallback((index) => completeTaskByIndex(listName, index), [completeTaskByIndex, listName]);
   
   return {
     tasks,
