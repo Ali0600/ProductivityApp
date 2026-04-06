@@ -139,7 +139,7 @@ function Homepage(props){
                       </GestureHandlerRootView>
 
                         <Modal visible={taskListVisible} animationType="slide" transparent={true}>
-                            <View style={styles.taskListModal}>
+                            <View style={styles.modalContent}>
                                 <TextInput
                                     style={styles.inputForms}
                                     onChangeText={text => setNewListName(text)}
@@ -278,15 +278,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "black"
     },
-    taskListModal:{
-        backgroundColor: "white",
-        flex: 1,
-        margin: 20,
-        marginTop: 40,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "black"
-    },
     inputForms: {
         padding: 10,
         borderRadius: 1,
@@ -294,7 +285,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     menuContainer: {
-        justifyContent: 'center',
         flexDirection: "column",
         flex: 1,
         justifyContent: "flex-start"
@@ -303,38 +293,13 @@ const styles = StyleSheet.create({
         backgroundColor: "black",
         flex: 1,
     },
-    listWrapper: {
-        position: "relative",
-        width: "100%",
-        paddingBottom: 35,
-        paddingTop: 10,
-        backgroundColor: "white",
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     settingsTitle: {
         fontSize: 24,
         fontWeight: "bold",
         textAlign: "center",
         marginBottom: 20,
         marginTop: 10,
-    },
-    settingsLabel: {
-        fontSize: 16,
-        marginLeft: 10,
-        marginBottom: 5,
-    },
-    settingsDescription: {
-        fontSize: 14,
-        color: "gray",
-        marginTop: 10,
-        marginLeft: 10,
-        marginRight: 10,
-        textAlign: "center",
     }
   })
 
 export default Homepage;
-
-//                                 <Text style={{ color: listName === currentList ? "red" : "white" }}>{listName}</Text>
