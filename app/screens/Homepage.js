@@ -100,12 +100,12 @@ function Homepage(props){
                     <Modal visible={menuVisible} animationType="slide" transparent={true}>
                       <GestureHandlerRootView style={{ flex: 1 }}>
                         <SafeAreaView style={styles.menuContainer}>
-                            <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white' }}>
                                 <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
                                     <AntDesignIcons name='closecircle' size={40} />
                                 </TouchableOpacity>
 
-                                <Text backgroundColor="yellow">Lists</Text>
+                                <Text style={{ backgroundColor: 'yellow' }}>Lists</Text>
 
                                 <TouchableOpacity onPress={() => setTaskListVisible(true)}>
                                     <AntDesignIcons name='pluscircle' size={40} />
@@ -177,7 +177,7 @@ function Homepage(props){
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
-                        <View flexDirection="row" justifyContent="space-between">
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                             <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
                                <EntypoIcons name='menu' size={40} />
                             </TouchableOpacity>
