@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
@@ -44,10 +44,10 @@ function Homepage(props){
         setModalVisible(false);
     };
 
-    const handleSwitchList = (listName) => {
+    const handleSwitchList = useCallback((listName) => {
         switchList(listName);
         setMenuPanalVisible(false);
-    };
+    }, [switchList]);
     
     const handleReorderLists = (reorderedLists) => {
         console.log("Handling list reorder:", reorderedLists.map(l => l.listName));
@@ -122,14 +122,14 @@ function Homepage(props){
                                         // We need to add a function to handle this
                                         handleReorderLists(data);
                                     }}
-                                    renderItem={({ item, drag, isActive, index }) => (
+                                    renderItem={({ item, drag, isActive }) => (
                                         <ScaleDecorator>
                                             <List
                                                 text={item.listName}
-                                                index={index}
                                                 drag={drag}
                                                 isActive={isActive}
-                                                onListPress={() => handleSwitchList(item.listName)}
+                                                onSelect={handleSwitchList}
+                                                onRemove={removeList}
                                             />
                                         </ScaleDecorator>
                                     )}
