@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 20,
         borderColor: "black",
-        textAlign: 'center',
         justifyContent: "space-between"
     },
     deleteBox: {
