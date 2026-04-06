@@ -1,15 +1,9 @@
-import { memo, useRef, useEffect } from "react";
+import { memo, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
     const swipeableRef = useRef(null);
-
-    // For debugging - show when component mounts
-    useEffect(() => {
-        console.log(`Task mounted: ${text} with ID: ${taskId}`);
-        return () => console.log(`Task unmounted: ${text} with ID: ${taskId}`);
-    }, []);
 
     const closeSwipe = () => {
         if (swipeableRef.current) {
