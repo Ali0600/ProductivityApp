@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
+import { useState, useCallback } from "react";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
@@ -15,43 +15,39 @@ function Homepage(props){
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [settingsVisible, setSettingsVisible] = useState(false);
-    const [currentTime, setCurrentTime] = useState(moment());
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
-    
+
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
-    const { addTaskToList, reorderTasksInList } = useListTasks(currentList);
-
-    // This useEffect is used to update the current time every 10 seconds
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            setCurrentTime(moment());
-        }, 10000);
-
-        return() => clearInterval(intervalId);
-    }, []);
+    const {
+        addTaskToList,
+        reorderTasksInList,
+        removeTaskFromListByIndex,
+        updateTaskInList,
+        completeTaskInListByIndex,
+    } = useListTasks(currentList);
 
     const handleAddTask = () => {
         if (!task.trim()) return;
-        
+
         const newTask = {
             id: `task-${Date.now()}`, // Create a reliable unique ID
-            taskName: task, 
-            creationTime: currentTime.toDate()
+            taskName: task,
+            creationTime: new Date()
         };
-        
+
         console.log("Adding new task:", newTask);
         addTaskToList(newTask);
         setTask(''); // Clear input
         setModalVisible(false);
     };
 
-    const handleSwitchList = (listName) => {
+    const handleSwitchList = useCallback((listName) => {
         switchList(listName);
         setMenuPanalVisible(false);
-    };
+    }, [switchList]);
     
     const handleReorderLists = (reorderedLists) => {
         console.log("Handling list reorder:", reorderedLists.map(l => l.listName));
@@ -91,12 +87,12 @@ function Homepage(props){
                         </View>
 
                         <View style={styles.buttonWrapper}>
-                            <TouchableOpacity>
-                                <AntDesignIcons name='minuscircle' size={60} onPress={() => setModalVisible(false) }/>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <AntDesignIcons name='minuscircle' size={60} />
                             </TouchableOpacity>
 
-                            <TouchableOpacity>
-                                <AntDesignIcons name='pluscircle' size={60} onPress={handleAddTask}/>
+                            <TouchableOpacity onPress={handleAddTask}>
+                                <AntDesignIcons name='pluscircle' size={60} />
                             </TouchableOpacity>
                         </View>
                     </Modal>
@@ -104,21 +100,16 @@ function Homepage(props){
                     <Modal visible={menuVisible} animationType="slide" transparent={true}>
                       <GestureHandlerRootView style={{ flex: 1 }}>
                         <SafeAreaView style={styles.menuContainer}>
-                            <View flexDirection="row" justifyContent="space-between" backgroundColor="white">
-                                <AntDesignIcons 
-                                    name='closecircle' 
-                                    size={40} 
-                                    backgroundColor='white' 
-                                    onPress={() => setMenuPanalVisible(false)}
-                                />
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white' }}>
+                                <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
+                                    <AntDesignIcons name='closecircle' size={40} />
+                                </TouchableOpacity>
 
-                                <Text backgroundColor="yellow">Lists</Text>
+                                <Text style={{ backgroundColor: 'yellow' }}>Lists</Text>
 
-                                <AntDesignIcons 
-                                    name='pluscircle' 
-                                    size={40} 
-                                    onPress={() => setTaskListVisible(true)}
-                                />
+                                <TouchableOpacity onPress={() => setTaskListVisible(true)}>
+                                    <AntDesignIcons name='pluscircle' size={40} />
+                                </TouchableOpacity>
                             </View>
                             
                             <View style={styles.menuLists}>
@@ -131,14 +122,14 @@ function Homepage(props){
                                         // We need to add a function to handle this
                                         handleReorderLists(data);
                                     }}
-                                    renderItem={({ item, drag, isActive, index }) => (
+                                    renderItem={({ item, drag, isActive }) => (
                                         <ScaleDecorator>
                                             <List
                                                 text={item.listName}
-                                                index={index}
                                                 drag={drag}
                                                 isActive={isActive}
-                                                onListPress={() => handleSwitchList(item.listName)}
+                                                onSelect={handleSwitchList}
+                                                onRemove={removeList}
                                             />
                                         </ScaleDecorator>
                                     )}
@@ -148,7 +139,7 @@ function Homepage(props){
                       </GestureHandlerRootView>
 
                         <Modal visible={taskListVisible} animationType="slide" transparent={true}>
-                            <View style={styles.taskListModal}>
+                            <View style={styles.modalContent}>
                                 <TextInput
                                     style={styles.inputForms}
                                     onChangeText={text => setNewListName(text)}
@@ -158,20 +149,12 @@ function Homepage(props){
                             </View>
 
                             <View style={styles.buttonWrapper}>
-                                <TouchableOpacity>
-                                    <AntDesignIcons 
-                                        name='minuscircle' 
-                                        size={60} 
-                                        onPress={() => setTaskListVisible(false)}
-                                    />
+                                <TouchableOpacity onPress={() => setTaskListVisible(false)}>
+                                    <AntDesignIcons name='minuscircle' size={60} />
                                 </TouchableOpacity>
 
-                                <TouchableOpacity>
-                                    <AntDesignIcons 
-                                        name='pluscircle' 
-                                        size={60} 
-                                        onPress={handleAddNewList}
-                                    />
+                                <TouchableOpacity onPress={handleAddNewList}>
+                                    <AntDesignIcons name='pluscircle' size={60} />
                                 </TouchableOpacity>
                             </View>
                         </Modal>
@@ -183,22 +166,20 @@ function Homepage(props){
                         </View>
 
                         <View style={styles.buttonWrapper}>
-                            <TouchableOpacity>
-                                <AntDesignIcons name='closecircle' size={60} onPress={() => setSettingsVisible(false)} />
+                            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                                <AntDesignIcons name='closecircle' size={60} />
                             </TouchableOpacity>
 
-                            <TouchableOpacity>
-                                <AntDesignIcons name='checkcircle' size={60} onPress={() => {
-                                    setSettingsVisible(false);
-                                }}/>
+                            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                                <AntDesignIcons name='checkcircle' size={60} />
                             </TouchableOpacity>
                         </View>
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
-                        <View flexDirection="row" justifyContent="space-between">
-                            <TouchableOpacity>
-                               <EntypoIcons name='menu' size={40} onPress={() => setMenuPanalVisible(true)}/>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
+                               <EntypoIcons name='menu' size={40} />
                             </TouchableOpacity>
 
                             <Text style={styles.textFont}>ADHDone</Text>
@@ -209,42 +190,34 @@ function Homepage(props){
                         </View>
                     </SafeAreaView>
 
-                    <ScrollView>
-                        {currentListData && currentListData.tasks && currentListData.tasks.length > 0 ? (
-                            currentListData.tasks.map((task, index) => {
-                                //console.log("Rendering task:", task);
-                                const taskId = task.id || `task-${currentList}-${index}`;
-                                //console.log("Using taskId:", taskId);
-                                
-                                return (
-                                    <Task
-                                        text={task.taskName}
-                                        key={taskId}
-                                        index={index}
-                                        taskId={taskId}
-                                        creationTime={moment(task.creationTime).fromNow()}
-                                        currentListName={currentList}
-                                    />
-                                );
-                            })
-                        ) : (
+                    <FlatList
+                        data={currentListData?.tasks ?? []}
+                        keyExtractor={(item, index) => item.id || `task-${currentList}-${index}`}
+                        renderItem={({ item, index }) => (
+                            <Task
+                                text={item.taskName}
+                                index={index}
+                                taskId={item.id || `task-${currentList}-${index}`}
+                                creationTime={moment(item.creationTime).fromNow()}
+                                onRemove={removeTaskFromListByIndex}
+                                onComplete={completeTaskInListByIndex}
+                                onUpdate={updateTaskInList}
+                            />
+                        )}
+                        ListEmptyComponent={
                             <Text style={{color: 'white', padding: 20, textAlign: 'center'}}>
                                 No tasks in this list
                             </Text>
-                        )}
-                    </ScrollView>
+                        }
+                    />
 
                     <View style={styles.buttonWrapper}>
-                        <TouchableOpacity>
-                            <AntDesignIcons 
-                                name='pluscircle' 
-                                size={60} 
-                                onPress={() => setModalVisible(true)}
-                            />
+                        <TouchableOpacity onPress={() => setModalVisible(true)}>
+                            <AntDesignIcons name='pluscircle' size={60} />
                         </TouchableOpacity>
                     </View>
 
-                    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} />
+                    <KeyboardAvoidingView behavior="padding" />
                 </>
             )}
         </View>
@@ -305,15 +278,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "black"
     },
-    taskListModal:{
-        backgroundColor: "white",
-        flex: 1,
-        margin: 20,
-        marginTop: 40,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "black"
-    },
     inputForms: {
         padding: 10,
         borderRadius: 1,
@@ -321,7 +285,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     menuContainer: {
-        justifyContent: 'center',
         flexDirection: "column",
         flex: 1,
         justifyContent: "flex-start"
@@ -330,38 +293,13 @@ const styles = StyleSheet.create({
         backgroundColor: "black",
         flex: 1,
     },
-    listWrapper: {
-        position: "relative",
-        width: "100%",
-        paddingBottom: 35,
-        paddingTop: 10,
-        backgroundColor: "white",
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     settingsTitle: {
         fontSize: 24,
         fontWeight: "bold",
         textAlign: "center",
         marginBottom: 20,
         marginTop: 10,
-    },
-    settingsLabel: {
-        fontSize: 16,
-        marginLeft: 10,
-        marginBottom: 5,
-    },
-    settingsDescription: {
-        fontSize: 14,
-        color: "gray",
-        marginTop: 10,
-        marginLeft: 10,
-        marginRight: 10,
-        textAlign: "center",
     }
   })
 
 export default Homepage;
-
-//                                 <Text style={{ color: listName === currentList ? "red" : "white" }}>{listName}</Text>

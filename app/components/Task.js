@@ -1,44 +1,16 @@
-import { useRef, useEffect } from "react";
+import { memo, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { useListTasks } from '../hooks/useAppState';
 
-// Delete these component definitions as we're now implementing the functionality directly in the Task component
-
-const Task = ({ text, creationTime, index, currentListName, taskId }) => {
+const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
     const swipeableRef = useRef(null);
-    // Use our custom hook to access task operations for the specified list
-    const { 
-        tasks, 
-        removeTaskFromList,
-        removeTaskFromListByIndex, 
-        updateTaskInList, 
-        completeTaskInList,
-        completeTaskInListByIndex 
-    } = useListTasks(currentListName);
-    
-    // If taskId is not provided, create a fallback ID
-    const actualTaskId = taskId || `${text}-${index}`;
-    
-    //console.log("Task component received:", { 
-    //    text, 
-    //    index, 
-    //    currentListName, 
-    //    taskId: actualTaskId 
-    //});
-    
-    // For debugging - show when component mounts
-    useEffect(() => {
-        console.log(`Task mounted: ${text} with ID: ${actualTaskId}`);
-        return () => console.log(`Task unmounted: ${text} with ID: ${actualTaskId}`);
-    }, []);
 
     const closeSwipe = () => {
         if (swipeableRef.current) {
             swipeableRef.current.close();
         }
     };
-    
+
     const handleRemove = () => {
         Alert.alert(
             "Delete Task",
@@ -53,19 +25,15 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
                     text: "Delete",
                     style: "destructive",
                     onPress: () => {
-                        console.log("Removing task at index:", index);
-                        // Use the index-based approach which is more reliable
-                        removeTaskFromListByIndex(index);
-                        console.log("Remove task by index function called");
+                        onRemove(index);
                         closeSwipe();
                     }
                 }
             ]
         );
     };
-    
+
     const handleComplete = () => {
-        // Display an alert to make it clear what's happening
         Alert.alert(
             "Complete Task",
             `Marking "${text}" as complete and moving to bottom of list`,
@@ -79,10 +47,7 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
                     text: "Complete",
                     style: "default",
                     onPress: () => {
-                        console.log("Marking task as complete with index:", index);
-                        // Use the index-based approach which is more reliable
-                        completeTaskInListByIndex(index);
-                        console.log("Complete task by index function called");
+                        onComplete(index);
                         closeSwipe();
                     }
                 }
@@ -91,7 +56,6 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
     };
 
     const handleEdit = () => {
-        console.log("Edit pressed - Task ID:", actualTaskId, "Current text:", text);
         Alert.prompt(
             "Edit Task",
             "Enter new task name:",
@@ -104,8 +68,7 @@ const Task = ({ text, creationTime, index, currentListName, taskId }) => {
                     text: "Save",
                     onPress: (newText) => {
                         if (newText && newText.trim()) {
-                            console.log("Saving new text:", newText.trim(), "for task ID:", actualTaskId);
-                            updateTaskInList(actualTaskId, { 
+                            onUpdate(taskId, {
                                 text: newText.trim(),
                                 taskName: newText.trim()
                             });
@@ -155,7 +118,6 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 20,
         borderColor: "black",
-        textAlign: 'center',
         justifyContent: "space-between"
     },
     deleteBox: {
@@ -178,4 +140,4 @@ const styles = StyleSheet.create({
     }
 })
 
-export default Task;
+export default memo(Task);
