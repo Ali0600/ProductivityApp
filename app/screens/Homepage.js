@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, FlatList, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
@@ -217,7 +217,7 @@ function Homepage(props){
                         </TouchableOpacity>
                     </View>
 
-                    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} />
+                    <KeyboardAvoidingView behavior="padding" />
                 </>
             )}
         </View>
