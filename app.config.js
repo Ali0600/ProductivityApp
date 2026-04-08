@@ -41,7 +41,7 @@ export default ({ config }) => {
         }
       },
       runtimeVersion: {
-        policy: "fingerprint"
+        policy: "appVersion"
       },
       updates: {
         url: "https://u.expo.dev/3301b407-d8a6-4018-bf3c-4f1db722f073"
