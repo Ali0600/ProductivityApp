@@ -182,7 +182,7 @@ function Homepage(props){
                                <EntypoIcons name='menu' size={40} />
                             </TouchableOpacity>
 
-                            <Text style={styles.textFont}>ADHDone</Text>
+                            <Text style={styles.textFont}>ADHD Habits</Text>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
                                <FeatherIcons name='settings' size={40}/>
