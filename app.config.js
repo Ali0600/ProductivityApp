@@ -6,7 +6,7 @@ export default ({ config }) => {
     expo: {
       name: "ADHD Habits",
       slug: "adhd-habits",
-      version: "1.0.27",
+      version: "1.0.28",
       orientation: "portrait",
       icon: "./app/assets/icon.png",
       userInterfaceStyle: "light",
@@ -41,7 +41,7 @@ export default ({ config }) => {
         }
       },
       runtimeVersion: {
-        policy: "fingerprint"
+        policy: "appVersion"
       },
       updates: {
         url: "https://u.expo.dev/3301b407-d8a6-4018-bf3c-4f1db722f073"
