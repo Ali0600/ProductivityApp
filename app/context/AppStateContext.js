@@ -221,7 +221,13 @@ export const AppStateProvider = ({ children }) => {
     if (!name) return;
     setMainLists((prev) => {
       if (prev.some((ml) => ml.name === name)) return prev;
-      return [...prev, { name, sideLists: [] }];
+      return [
+        ...prev,
+        {
+          name,
+          sideLists: [{ listName: 'Tasks', tasks: [], lastCompletedAt: null }],
+        },
+      ];
     });
   }, []);
 
