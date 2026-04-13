@@ -23,18 +23,6 @@ const createDefaultMainLists = () => [
   },
 ];
 
-// Migrate the old flat `lists` shape into a single default Main List
-const wrapOldListsIntoMain = (oldLists) => [
-  {
-    name: DEFAULT_MAIN_LIST_NAME,
-    sideLists: (oldLists || []).map((sl) => ({
-      listName: sl.listName,
-      tasks: sl.tasks ?? [],
-      lastCompletedAt: null,
-    })),
-  },
-];
-
 export const AppStateProvider = ({ children }) => {
   const [mainLists, setMainLists] = useState([]);
   const [currentMainList, setCurrentMainList] = useState('');
@@ -52,16 +40,9 @@ export const AppStateProvider = ({ children }) => {
         if (loadedMain !== null && Array.isArray(loadedMain)) {
           setMainLists(loadedMain);
         } else {
-          const oldLists = await StorageService.getLists();
-          if (oldLists && oldLists.length > 0) {
-            const migrated = wrapOldListsIntoMain(oldLists);
-            setMainLists(migrated);
-            await StorageService.saveMainLists(migrated);
-          } else {
-            const defaults = createDefaultMainLists();
-            setMainLists(defaults);
-            await StorageService.saveMainLists(defaults);
-          }
+          const defaults = createDefaultMainLists();
+          setMainLists(defaults);
+          await StorageService.saveMainLists(defaults);
         }
       } catch (err) {
         console.error('Error loading app data:', err);

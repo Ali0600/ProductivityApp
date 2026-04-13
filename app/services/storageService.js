@@ -72,40 +72,6 @@ export default class StorageService {
     }
   }
 
-  /**
-   * Get all lists from storage
-   * @returns {Promise<Array>} - Array of lists or empty array
-   */
-  static async getLists() {
-    return this.getData('lists', []);
-  }
-
-  /**
-   * Get current active list from storage
-   * @returns {Promise<string>} - Current list name or empty string
-   */
-  static async getCurrentList() {
-    return this.getData('currentList', '');
-  }
-
-  /**
-   * Save lists to storage
-   * @param {Array} lists - Lists to save
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async saveLists(lists) {
-    return this.storeData('lists', lists);
-  }
-
-  /**
-   * Save current list to storage
-   * @param {string} currentList - Current list name
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async saveCurrentList(currentList) {
-    return this.storeData('currentList', currentList);
-  }
-
   static async getMainLists() {
     return this.getData('mainLists', null);
   }
