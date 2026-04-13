@@ -105,4 +105,28 @@ export default class StorageService {
   static async saveCurrentList(currentList) {
     return this.storeData('currentList', currentList);
   }
+
+  static async getMainLists() {
+    return this.getData('mainLists', null);
+  }
+
+  static async saveMainLists(mainLists) {
+    return this.storeData('mainLists', mainLists);
+  }
+
+  static async getCurrentMainList() {
+    return this.getData('currentMainList', '');
+  }
+
+  static async saveCurrentMainList(name) {
+    return this.storeData('currentMainList', name);
+  }
+
+  static async getCurrentSideList() {
+    return this.getData('currentSideList', '');
+  }
+
+  static async saveCurrentSideList(name) {
+    return this.storeData('currentSideList', name);
+  }
 }
