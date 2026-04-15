@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert } from "react-native";
 import Task from "../components/Task";
 import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
@@ -20,8 +20,8 @@ function Homepage(props){
 
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
-    const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
-    const { exitToTileGrid } = useMainLists();
+    const { lists, currentList, currentListData, addList, removeList, switchList, updateLists, moveSideList } = useLists();
+    const { mainLists, currentMainList, exitToTileGrid } = useMainLists();
     const {
         addTaskToList,
         reorderTasksInList,
@@ -63,6 +63,36 @@ function Homepage(props){
         setNewListName(''); // Clear input
         setTaskListVisible(false);
     };
+
+    const handleMoveList = useCallback((sideListName) => {
+        const targets = mainLists.filter((ml) => ml.name !== currentMainList);
+        if (targets.length === 0) {
+            Alert.alert('No destination', 'Create another main list before moving.');
+            return;
+        }
+        const options = [...targets.map((ml) => ml.name), 'Cancel'];
+        const cancelButtonIndex = options.length - 1;
+
+        ActionSheetIOS.showActionSheetWithOptions(
+            {
+                title: `Move "${sideListName}" to...`,
+                options,
+                cancelButtonIndex,
+            },
+            (idx) => {
+                if (idx === cancelButtonIndex) return;
+                const target = targets[idx];
+                if (!target) return;
+                const ok = moveSideList(sideListName, target.name);
+                if (!ok) {
+                    Alert.alert(
+                        'Move failed',
+                        `"${target.name}" already has a list named "${sideListName}".`
+                    );
+                }
+            }
+        );
+    }, [mainLists, currentMainList, moveSideList]);
 
     const cycleList = useCallback((direction) => {
         if (!lists || lists.length <= 1) return;
@@ -139,6 +169,7 @@ function Homepage(props){
                                                 isActive={isActive}
                                                 onSelect={handleSwitchList}
                                                 onRemove={removeList}
+                                                onMove={handleMoveList}
                                             />
                                         </ScaleDecorator>
                                     )}

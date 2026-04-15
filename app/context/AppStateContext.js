@@ -216,6 +216,39 @@ export const AppStateProvider = ({ children }) => {
     [currentMainList]
   );
 
+  const moveSideList = useCallback(
+    (sideListName, targetMainListName) => {
+      if (!currentMainList || !sideListName || !targetMainListName) return false;
+      if (currentMainList === targetMainListName) return false;
+
+      const source = mainLists.find((ml) => ml.name === currentMainList);
+      const target = mainLists.find((ml) => ml.name === targetMainListName);
+      if (!source || !target) return false;
+      const sideList = source.sideLists.find((sl) => sl.listName === sideListName);
+      if (!sideList) return false;
+      if (target.sideLists.some((sl) => sl.listName === sideListName)) return false;
+
+      setMainLists((prev) =>
+        prev.map((ml) => {
+          if (ml.name === currentMainList) {
+            return {
+              ...ml,
+              sideLists: ml.sideLists.filter((sl) => sl.listName !== sideListName),
+            };
+          }
+          if (ml.name === targetMainListName) {
+            return { ...ml, sideLists: [...ml.sideLists, sideList] };
+          }
+          return ml;
+        })
+      );
+
+      if (currentSideList === sideListName) setCurrentSideList('');
+      return true;
+    },
+    [mainLists, currentMainList, currentSideList]
+  );
+
   // --- Main list ops ---
   const addMainList = useCallback((name) => {
     if (!name) return;
@@ -316,6 +349,7 @@ export const AppStateProvider = ({ children }) => {
       removeList,
       switchList,
       updateLists,
+      moveSideList,
       addTask,
       removeTask,
       removeTaskByIndex,
@@ -343,6 +377,7 @@ export const AppStateProvider = ({ children }) => {
       removeList,
       switchList,
       updateLists,
+      moveSideList,
       addTask,
       removeTask,
       removeTaskByIndex,
