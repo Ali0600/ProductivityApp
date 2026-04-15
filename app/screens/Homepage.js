@@ -179,16 +179,13 @@ function Homepage(props){
 
                     <SafeAreaView style={styles.productName}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <TouchableOpacity onPress={exitToTileGrid} style={{ marginRight: 8 }}>
-                                   <FeatherIcons name='home' size={36} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
-                                   <EntypoIcons name='menu' size={40} />
-                                </TouchableOpacity>
-                            </View>
+                            <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
+                               <EntypoIcons name='menu' size={40} />
+                            </TouchableOpacity>
 
-                            <Text style={styles.textFont}>ADHD Habits</Text>
+                            <TouchableOpacity onPress={exitToTileGrid}>
+                                <Text style={styles.textFont}>ADHD Habits</Text>
+                            </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
                                <FeatherIcons name='settings' size={40}/>
