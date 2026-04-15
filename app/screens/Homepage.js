@@ -58,11 +58,19 @@ function Homepage(props){
 
     const handleAddNewList = () => {
         if (!newListName.trim()) return;
-        
+
         addList(newListName);
         setNewListName(''); // Clear input
         setTaskListVisible(false);
     };
+
+    const cycleList = useCallback((direction) => {
+        if (!lists || lists.length <= 1) return;
+        const idx = lists.findIndex(l => l.listName === currentList);
+        if (idx === -1) return;
+        const nextIdx = (idx + direction + lists.length) % lists.length;
+        switchList(lists[nextIdx].listName);
+    }, [lists, currentList, switchList]);
 
     return(
         <View style={styles.container}>
@@ -214,9 +222,17 @@ function Homepage(props){
                         }
                     />
 
-                    <View style={styles.buttonWrapper}>
+                    <View style={[styles.buttonWrapper, styles.bottomNav]}>
+                        <TouchableOpacity onPress={() => cycleList(-1)}>
+                            <AntDesignIcons name='leftcircle' size={50} />
+                        </TouchableOpacity>
+
                         <TouchableOpacity onPress={() => setModalVisible(true)}>
                             <AntDesignIcons name='pluscircle' size={60} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => cycleList(1)}>
+                            <AntDesignIcons name='rightcircle' size={50} />
                         </TouchableOpacity>
                     </View>
 
@@ -271,6 +287,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    bottomNav: {
+        justifyContent: 'space-around',
+        paddingHorizontal: 20,
     },
     modalContent:{
         backgroundColor: "white",
