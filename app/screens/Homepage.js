@@ -8,7 +8,7 @@ import FeatherIcons from '@expo/vector-icons/Feather'
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useAppState, useLists, useListTasks, useAppLoading } from '../hooks/useAppState';
+import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -21,6 +21,7 @@ function Homepage(props){
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists } = useLists();
+    const { exitToTileGrid } = useMainLists();
     const {
         addTaskToList,
         reorderTasksInList,
@@ -177,12 +178,14 @@ function Homepage(props){
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
                                <EntypoIcons name='menu' size={40} />
                             </TouchableOpacity>
 
-                            <Text style={styles.textFont}>ADHD Habits</Text>
+                            <TouchableOpacity onPress={exitToTileGrid}>
+                                <Text style={styles.textFont}>ADHD Habits</Text>
+                            </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
                                <FeatherIcons name='settings' size={40}/>

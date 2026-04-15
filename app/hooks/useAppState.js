@@ -84,6 +84,36 @@ export const useLists = () => {
 };
 
 /**
+ * Custom hook for main list management (tile grid)
+ * @returns {Object} Main list data with computed staleness and management functions
+ */
+export const useMainLists = () => {
+  const {
+    mainLists,
+    mainListsWithStaleness,
+    currentMainList,
+    currentMainData,
+    addMainList,
+    removeMainList,
+    renameMainList,
+    switchMainList,
+    exitToTileGrid,
+  } = useAppState();
+
+  return {
+    mainLists,
+    mainListsWithStaleness,
+    currentMainList,
+    currentMainData,
+    addMainList,
+    removeMainList,
+    renameMainList,
+    switchMainList,
+    exitToTileGrid,
+  };
+};
+
+/**
  * Custom hook to access loading state and errors
  * @returns {Object} Loading state and error information
  */

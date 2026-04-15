@@ -1,69 +1,48 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageService from '../services/storageService';
 
-// Create the context
 export const AppStateContext = createContext();
 
-/**
- * App State Provider Component
- * Provides centralized state management for the app
- */
+const DEFAULT_MAIN_LIST_NAME = 'Tasks';
+
+const createDefaultMainLists = () => [
+  {
+    name: DEFAULT_MAIN_LIST_NAME,
+    sideLists: [
+      {
+        listName: 'Tasks',
+        tasks: [{ id: 'task-default-1', taskName: 'Sample Task', creationTime: new Date() }],
+        lastCompletedAt: null,
+      },
+      {
+        listName: 'Daily Habits',
+        tasks: [{ id: 'task-default-2', taskName: 'Sample Habit', creationTime: new Date() }],
+        lastCompletedAt: null,
+      },
+    ],
+  },
+];
+
 export const AppStateProvider = ({ children }) => {
-  // App state
-  const [lists, setLists] = useState([]);
-  const [currentList, setCurrentList] = useState('');
+  const [mainLists, setMainLists] = useState([]);
+  const [currentMainList, setCurrentMainList] = useState('');
+  const [currentSideList, setCurrentSideList] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        // Load lists, current list, in parallel
-        const [loadedLists, loadedCurrentList] = await Promise.all([
-          StorageService.getLists(),
-          StorageService.getCurrentList(),
-        ]);
 
-        
-        console.log("Loaded from storage:", { loadedLists, loadedCurrentList });
-        
-        // If no lists exist yet, create default lists
-        if (!loadedLists || loadedLists.length === 0) {
-          console.log("Creating default lists");
-          const defaultLists = [
-            {
-              listName: 'Tasks',
-              tasks: [
-                {id: 'task-default-1', taskName: 'Sample Task', creationTime: new Date()}
-              ]
-            },
-            {
-              listName: 'Daily Habits',
-              tasks: [
-                {id: 'task-default-2', taskName: 'Sample Habit', creationTime: new Date()}
-              ]
-            }
-          ];
-          
-          console.log("Default lists:", defaultLists);
-          
-          await StorageService.saveLists(defaultLists);
-          setLists(defaultLists);
-          
-          // Set default current list if none exists
-          if (!loadedCurrentList) {
-            await StorageService.saveCurrentList('Tasks');
-            setCurrentList('Tasks');
-          } else {
-            setCurrentList(loadedCurrentList);
-          }
+        const loadedMain = await StorageService.getMainLists();
+        if (loadedMain !== null && Array.isArray(loadedMain)) {
+          setMainLists(loadedMain);
         } else {
-          setLists(loadedLists);
-          setCurrentList(loadedCurrentList || (loadedLists.length > 0 ? loadedLists[0].listName : ''));
+          const defaults = createDefaultMainLists();
+          setMainLists(defaults);
+          await StorageService.saveMainLists(defaults);
         }
       } catch (err) {
         console.error('Error loading app data:', err);
@@ -72,356 +51,309 @@ export const AppStateProvider = ({ children }) => {
         setIsLoading(false);
       }
     };
-
     loadData();
   }, []);
 
-  // Save lists whenever they change
   useEffect(() => {
-    const saveData = async () => {
-      if (!isLoading) {
-        console.log("Saving lists to storage:", lists);
-        try {
-          await StorageService.saveLists(lists);
-          console.log("Lists saved successfully");
-        } catch (err) {
-          console.error('Error saving lists:', err);
-          setError('Failed to save changes. Please try again.');
-        }
-      }
-    };
-    
-    // Add a small delay to ensure the state has settled
-    const timeoutId = setTimeout(() => {
-      saveData();
+    if (isLoading) return;
+    const t = setTimeout(() => {
+      StorageService.saveMainLists(mainLists).catch((err) => {
+        console.error('Error saving mainLists:', err);
+        setError('Failed to save changes. Please try again.');
+      });
     }, 100);
-    
-    // Clean up the timeout when the component unmounts or lists change
-    return () => clearTimeout(timeoutId);
-  }, [lists, isLoading]);
+    return () => clearTimeout(t);
+  }, [mainLists, isLoading]);
 
-  // Save current list whenever it changes
-  useEffect(() => {
-    const saveCurrentList = async () => {
-      if (!isLoading && currentList) {
-        try {
-          await StorageService.saveCurrentList(currentList);
-        } catch (err) {
-          console.error('Error saving current list:', err);
-          setError('Failed to save current list. Please try again.');
-        }
-      }
-    };
-    
-    saveCurrentList();
-  }, [currentList, isLoading]);
-
-  // Add a new task to a list
-  const addTask = useCallback((listName, task) => {
-    console.log("Adding task to list:", { listName, task });
-    
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      console.log("Found list at index:", listIndex);
-      
-      if (listIndex >= 0) {
-        // Ensure task has an ID
-        const taskWithId = {
-          id: task.id || `task-${Date.now()}`,
-          ...task
+  const mutateSideList = useCallback((mainName, sideName, mutator) => {
+    setMainLists((prev) =>
+      prev.map((ml) => {
+        if (ml.name !== mainName) return ml;
+        return {
+          ...ml,
+          sideLists: ml.sideLists.map((sl) => (sl.listName === sideName ? mutator(sl) : sl)),
         };
-        console.log("Adding task with ID:", taskWithId);
-        
-        // Create a new tasks array with the new task added
-        const updatedTasks = [...newLists[listIndex].tasks, taskWithId];
-        // Create a new list object with the updated tasks
-        newLists[listIndex] = { 
-          ...newLists[listIndex], 
-          tasks: updatedTasks 
-        };
-      } else {
-        console.error("List not found:", listName);
-      }
-      
-      return newLists;
-    });
+      })
+    );
   }, []);
 
-  // Remove a task from a list
-  const removeTask = useCallback((listName, taskId) => {
-    console.log("Removing task from list:", { listName, taskId });
-    
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      console.log("Found list at index:", listIndex);
-      
-      if (listIndex >= 0) {
-        const originalTasks = [...newLists[listIndex].tasks];
-        console.log("Original tasks:", originalTasks);
-        
-        // Create a new tasks array without the removed task
-        const updatedTasks = originalTasks.filter(task => task.id !== taskId);
-        console.log("Tasks after removal:", updatedTasks);
-        
-        if (originalTasks.length === updatedTasks.length) {
-          console.warn("No task was removed! Task ID not found:", taskId);
-          console.log("Available task IDs:", originalTasks.map(t => t.id));
-        }
-        
-        // Create a new list object with the updated tasks
-        newLists[listIndex] = { 
-          ...newLists[listIndex], 
-          tasks: updatedTasks 
-        };
-      } else {
-        console.error("List not found:", listName);
-      }
-      
-      return newLists;
-    });
-  }, []);
-  
-  // Remove a task by index instead of ID
-  const removeTaskByIndex = useCallback((listName, taskIndex) => {
-    console.log("Remove task by index:", { listName, taskIndex });
-    
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      
-      if (listIndex >= 0 && 
-          taskIndex >= 0 && 
-          taskIndex < newLists[listIndex].tasks.length) {
-        
-        const originalTasks = [...newLists[listIndex].tasks];
-        
-        // Remove the task at the specified index
-        originalTasks.splice(taskIndex, 1);
-        
-        console.log("Tasks after removal:", originalTasks.map(t => t.taskName));
-        
-        // Update the list with the tasks
-        newLists[listIndex] = {
-          ...newLists[listIndex],
-          tasks: originalTasks
-        };
-        
-        return newLists;
-      }
-      
-      return prevLists;
-    });
-  }, []);
-
-  // Update a task in a list
-  const updateTask = useCallback((listName, taskId, updates) => {
-    console.log("Updating task in list:", { listName, taskId, updates });
-    
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      console.log("Found list at index:", listIndex);
-      
-      if (listIndex >= 0) {
-        const originalTasks = [...newLists[listIndex].tasks];
-        console.log("Original tasks:", originalTasks);
-        
-        let taskUpdated = false;
-        
-        // Create a new tasks array with the updated task
-        const updatedTasks = originalTasks.map(task => {
-          if (task.id === taskId) {
-            taskUpdated = true;
-            console.log("Updating task:", task, "with:", updates);
-            return { ...task, ...updates };
-          }
-          return task;
-        });
-        
-        if (!taskUpdated) {
-          console.warn("No task was updated! Task ID not found:", taskId);
-          console.log("Available task IDs:", originalTasks.map(t => t.id));
-        }
-        
-        // Create a new list object with the updated tasks
-        newLists[listIndex] = { 
-          ...newLists[listIndex], 
-          tasks: updatedTasks 
-        };
-      } else {
-        console.error("List not found:", listName);
-      }
-      
-      return newLists;
-    });
-  }, []);
-  
-  // Directly complete a task by index rather than ID
-  const completeTaskByIndex = useCallback((listName, taskIndex) => {
-    console.log("Complete task by index:", { listName, taskIndex });
-    
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      
-      if (listIndex >= 0 && 
-          taskIndex >= 0 && 
-          taskIndex < newLists[listIndex].tasks.length) {
-        
-        const originalTasks = [...newLists[listIndex].tasks];
-        
-        // Remove the task at the specified index
-        const completedTask = {...originalTasks[taskIndex]};
-        originalTasks.splice(taskIndex, 1);
-        
-        // Update its creation time to now
-        completedTask.creationTime = new Date();
-        
-        // Add it to the end
-        originalTasks.push(completedTask);
-        
-        console.log("Tasks after completion:", originalTasks.map(t => t.taskName));
-        
-        // Update the list with reordered tasks
-        newLists[listIndex] = {
-          ...newLists[listIndex],
-          tasks: originalTasks
-        };
-        
-        return newLists;
-      }
-      
-      return prevLists;
-    });
-  }, []);
-  
-  // Update a task and move it to the bottom (for completed tasks)
-  const completeTask = useCallback((listName, taskId) => {
-    console.log("COMPLETE_TASK called with:", { listName, taskId });
-    
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      
-      if (listIndex >= 0) {
-        const originalTasks = [...newLists[listIndex].tasks];
-        
-        // First try by ID
-        const taskIndex = originalTasks.findIndex(task => task.id === taskId);
-        
-        if (taskIndex === -1) {
-          console.warn("Task not found by ID:", taskId);
-          return prevLists;
-        }
-        
-        // Task found by ID - complete it
-        const completedTask = {...originalTasks[taskIndex]};
-        originalTasks.splice(taskIndex, 1);
-        completedTask.creationTime = new Date();
-        originalTasks.push(completedTask);
-        
-        newLists[listIndex] = {
-          ...newLists[listIndex],
-          tasks: originalTasks
-        };
-      }
-      
-      return newLists;
-    });
-  }, []);
-
-  // Reorder tasks in a list
-  const reorderTasks = useCallback((listName, reorderedTasks) => {
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const listIndex = newLists.findIndex(list => list.listName === listName);
-      
-      if (listIndex >= 0) {
-        // Create a new list object with the reordered tasks
-        newLists[listIndex] = { 
-          ...newLists[listIndex], 
-          tasks: reorderedTasks 
-        };
-      }
-      
-      return newLists;
-    });
-  }, []);
-
-  // Add a new list
-  const addList = useCallback((listName) => {
-    setLists(prevLists => {
-      // Check if list already exists
-      if (prevLists.some(list => list.listName === listName)) {
-        return prevLists;
-      }
-      
-      // Add new list
-      return [...prevLists, { listName, tasks: [] }];
-    });
-    
-    // Set as current list if no current list is selected
-    if (!currentList) {
-      setCurrentList(listName);
-    }
-  }, [currentList]);
-
-  // Remove a list
-  const removeList = useCallback((listName) => {
-    setLists(prevLists => prevLists.filter(list => list.listName !== listName));
-    
-    // Reset current list if the removed list was the current one
-    if (currentList === listName) {
-      setCurrentList('');
-    }
-  }, [currentList]);
-
-  // Switch current list
-  const switchList = useCallback((listName) => {
-    setCurrentList(listName);
-  }, []);
-
-  // Get current list data as a computed value
-  const currentListData = useMemo(() => {
-    const listData = lists.find(list => list.listName === currentList);
-    return listData || { listName: '', tasks: [] };
-  }, [lists, currentList]);
-
-  // Directly update entire lists array
-  const updateLists = useCallback((newLists) => {
-    console.log("Updating entire lists array:", newLists);
-    setLists(newLists);
-  }, []);
-
-  // Context value — memoized so consumers only re-render when actual data changes
-  const contextValue = useMemo(() => ({
-    lists,
-    currentList,
-    currentListData,
-    isLoading,
-    error,
-    addTask,
-    removeTask,
-    removeTaskByIndex,
-    updateTask,
-    reorderTasks,
-    addList,
-    removeList,
-    switchList,
-    completeTask,
-    completeTaskByIndex,
-    updateLists,
-  }), [
-    lists, currentList, currentListData, isLoading, error,
-    addTask, removeTask, removeTaskByIndex, updateTask, reorderTasks,
-    addList, removeList, switchList, completeTask, completeTaskByIndex, updateLists,
-  ]);
-
-  return (
-    <AppStateContext.Provider value={contextValue}>
-      {children}
-    </AppStateContext.Provider>
+  // --- Task ops (scoped to currentMainList) ---
+  const addTask = useCallback(
+    (listName, task) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => ({
+        ...sl,
+        tasks: [...sl.tasks, { id: task.id || `task-${Date.now()}`, ...task }],
+      }));
+    },
+    [currentMainList, mutateSideList]
   );
+
+  const removeTask = useCallback(
+    (listName, taskId) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => ({
+        ...sl,
+        tasks: sl.tasks.filter((t) => t.id !== taskId),
+      }));
+    },
+    [currentMainList, mutateSideList]
+  );
+
+  const removeTaskByIndex = useCallback(
+    (listName, idx) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => {
+        if (idx < 0 || idx >= sl.tasks.length) return sl;
+        const next = [...sl.tasks];
+        next.splice(idx, 1);
+        return { ...sl, tasks: next };
+      });
+    },
+    [currentMainList, mutateSideList]
+  );
+
+  const updateTask = useCallback(
+    (listName, taskId, updates) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => ({
+        ...sl,
+        tasks: sl.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
+      }));
+    },
+    [currentMainList, mutateSideList]
+  );
+
+  const completeTaskByIndex = useCallback(
+    (listName, idx) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => {
+        if (idx < 0 || idx >= sl.tasks.length) return sl;
+        const next = [...sl.tasks];
+        const done = { ...next[idx], creationTime: new Date() };
+        next.splice(idx, 1);
+        next.push(done);
+        return { ...sl, tasks: next, lastCompletedAt: new Date() };
+      });
+    },
+    [currentMainList, mutateSideList]
+  );
+
+  const completeTask = useCallback(
+    (listName, taskId) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => {
+        const idx = sl.tasks.findIndex((t) => t.id === taskId);
+        if (idx === -1) return sl;
+        const next = [...sl.tasks];
+        const done = { ...next[idx], creationTime: new Date() };
+        next.splice(idx, 1);
+        next.push(done);
+        return { ...sl, tasks: next, lastCompletedAt: new Date() };
+      });
+    },
+    [currentMainList, mutateSideList]
+  );
+
+  const reorderTasks = useCallback(
+    (listName, reorderedTasks) => {
+      if (!currentMainList) return;
+      mutateSideList(currentMainList, listName, (sl) => ({ ...sl, tasks: reorderedTasks }));
+    },
+    [currentMainList, mutateSideList]
+  );
+
+  // --- Side list ops (scoped to currentMainList) ---
+  const addList = useCallback(
+    (sideListName) => {
+      if (!currentMainList || !sideListName) return;
+      setMainLists((prev) =>
+        prev.map((ml) => {
+          if (ml.name !== currentMainList) return ml;
+          if (ml.sideLists.some((sl) => sl.listName === sideListName)) return ml;
+          return {
+            ...ml,
+            sideLists: [
+              ...ml.sideLists,
+              { listName: sideListName, tasks: [], lastCompletedAt: null },
+            ],
+          };
+        })
+      );
+      if (!currentSideList) setCurrentSideList(sideListName);
+    },
+    [currentMainList, currentSideList]
+  );
+
+  const removeList = useCallback(
+    (sideListName) => {
+      if (!currentMainList) return;
+      setMainLists((prev) =>
+        prev.map((ml) =>
+          ml.name === currentMainList
+            ? { ...ml, sideLists: ml.sideLists.filter((sl) => sl.listName !== sideListName) }
+            : ml
+        )
+      );
+      if (currentSideList === sideListName) setCurrentSideList('');
+    },
+    [currentMainList, currentSideList]
+  );
+
+  const switchList = useCallback((sideListName) => {
+    setCurrentSideList(sideListName);
+  }, []);
+
+  const updateLists = useCallback(
+    (reorderedSideLists) => {
+      if (!currentMainList) return;
+      setMainLists((prev) =>
+        prev.map((ml) =>
+          ml.name === currentMainList ? { ...ml, sideLists: reorderedSideLists } : ml
+        )
+      );
+    },
+    [currentMainList]
+  );
+
+  // --- Main list ops ---
+  const addMainList = useCallback((name) => {
+    if (!name) return;
+    setMainLists((prev) => {
+      if (prev.some((ml) => ml.name === name)) return prev;
+      return [
+        ...prev,
+        {
+          name,
+          sideLists: [{ listName: 'Tasks', tasks: [], lastCompletedAt: null }],
+        },
+      ];
+    });
+  }, []);
+
+  const removeMainList = useCallback(
+    (name) => {
+      setMainLists((prev) => prev.filter((ml) => ml.name !== name));
+      if (currentMainList === name) {
+        setCurrentMainList('');
+        setCurrentSideList('');
+      }
+    },
+    [currentMainList]
+  );
+
+  const renameMainList = useCallback(
+    (oldName, newName) => {
+      if (!newName || oldName === newName) return;
+      setMainLists((prev) => {
+        if (prev.some((ml) => ml.name === newName)) return prev;
+        return prev.map((ml) => (ml.name === oldName ? { ...ml, name: newName } : ml));
+      });
+      if (currentMainList === oldName) setCurrentMainList(newName);
+    },
+    [currentMainList]
+  );
+
+  const switchMainList = useCallback(
+    (name) => {
+      const ml = mainLists.find((m) => m.name === name);
+      setCurrentMainList(name);
+      setCurrentSideList(ml && ml.sideLists.length > 0 ? ml.sideLists[0].listName : '');
+    },
+    [mainLists]
+  );
+
+  const exitToTileGrid = useCallback(() => {
+    setCurrentMainList('');
+    setCurrentSideList('');
+  }, []);
+
+  // --- Derived ---
+  const currentMainData = useMemo(
+    () => mainLists.find((ml) => ml.name === currentMainList),
+    [mainLists, currentMainList]
+  );
+
+  const lists = currentMainData?.sideLists ?? [];
+  const currentList = currentSideList;
+
+  const currentListData = useMemo(() => {
+    const found = lists.find((sl) => sl.listName === currentSideList);
+    return found || { listName: '', tasks: [] };
+  }, [lists, currentSideList]);
+
+  // Main lists with aggregated staleness (max lastCompletedAt across side lists)
+  const mainListsWithStaleness = useMemo(
+    () =>
+      mainLists.map((ml) => {
+        let max = null;
+        for (const sl of ml.sideLists) {
+          if (sl.lastCompletedAt) {
+            const t = new Date(sl.lastCompletedAt).getTime();
+            if (max === null || t > max) max = t;
+          }
+        }
+        return { name: ml.name, lastCompletedAt: max ? new Date(max) : null };
+      }),
+    [mainLists]
+  );
+
+  const contextValue = useMemo(
+    () => ({
+      mainLists,
+      mainListsWithStaleness,
+      currentMainList,
+      currentMainData,
+      addMainList,
+      removeMainList,
+      renameMainList,
+      switchMainList,
+      exitToTileGrid,
+      lists,
+      currentList,
+      currentListData,
+      addList,
+      removeList,
+      switchList,
+      updateLists,
+      addTask,
+      removeTask,
+      removeTaskByIndex,
+      updateTask,
+      reorderTasks,
+      completeTask,
+      completeTaskByIndex,
+      isLoading,
+      error,
+    }),
+    [
+      mainLists,
+      mainListsWithStaleness,
+      currentMainList,
+      currentMainData,
+      addMainList,
+      removeMainList,
+      renameMainList,
+      switchMainList,
+      exitToTileGrid,
+      lists,
+      currentList,
+      currentListData,
+      addList,
+      removeList,
+      switchList,
+      updateLists,
+      addTask,
+      removeTask,
+      removeTaskByIndex,
+      updateTask,
+      reorderTasks,
+      completeTask,
+      completeTaskByIndex,
+      isLoading,
+      error,
+    ]
+  );
+
+  return <AppStateContext.Provider value={contextValue}>{children}</AppStateContext.Provider>;
 };
