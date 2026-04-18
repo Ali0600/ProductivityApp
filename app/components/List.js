@@ -33,9 +33,9 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
             leftThreshold={100}
             rightThreshold={100}
             onSwipeableOpen={(direction) => {
-                if (direction === 'left') {
+                if (direction === 'right') {
                     handleMove();
-                } else if (direction === 'right') {
+                } else if (direction === 'left') {
                     handleDelete();
                 }
             }}

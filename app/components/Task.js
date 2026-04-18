@@ -87,9 +87,9 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
             leftThreshold={100}
             rightThreshold={100}
             onSwipeableOpen={(direction) => {
-                if (direction === 'left') {
+                if (direction === 'right') {
                     handleComplete();
-                } else if (direction === 'right') {
+                } else if (direction === 'left') {
                     handleRemove();
                 }
             }}
