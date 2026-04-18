@@ -84,6 +84,15 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
     return (
         <Swipeable
             ref={swipeableRef}
+            leftThreshold={100}
+            rightThreshold={100}
+            onSwipeableOpen={(direction) => {
+                if (direction === 'left') {
+                    handleComplete();
+                } else if (direction === 'right') {
+                    handleRemove();
+                }
+            }}
             renderRightActions={() => (
                 <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
                     <View>

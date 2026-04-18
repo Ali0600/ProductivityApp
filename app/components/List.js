@@ -30,6 +30,15 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
     return (
         <Swipeable
             ref={swipeableRef}
+            leftThreshold={100}
+            rightThreshold={100}
+            onSwipeableOpen={(direction) => {
+                if (direction === 'left') {
+                    handleMove();
+                } else if (direction === 'right') {
+                    handleDelete();
+                }
+            }}
             renderLeftActions={() => (
                 <TouchableOpacity style={styles.moveBox} onPress={handleMove}>
                     <View>
