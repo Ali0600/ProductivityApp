@@ -62,16 +62,17 @@ export const useListTasks = (listName) => {
  * @returns {Object} List management functions and data
  */
 export const useLists = () => {
-  const { 
-    lists, 
+  const {
+    lists,
     currentList,
     currentListData,
-    addList, 
-    removeList, 
+    addList,
+    removeList,
     switchList,
-    updateLists
+    updateLists,
+    moveSideList,
   } = useAppState();
-  
+
   return {
     lists,
     currentList,
@@ -79,7 +80,8 @@ export const useLists = () => {
     addList,
     removeList,
     switchList,
-    updateLists
+    updateLists,
+    moveSideList,
   };
 };
 

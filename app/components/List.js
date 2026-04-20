@@ -2,7 +2,7 @@ import { memo, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
-const List = ({ text, drag, isActive, onSelect, onRemove }) => {
+const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
     const swipeableRef = useRef(null);
 
     const closeSwipe = () => {
@@ -22,9 +22,30 @@ const List = ({ text, drag, isActive, onSelect, onRemove }) => {
         closeSwipe();
     };
 
+    const handleMove = () => {
+        if (onMove) onMove(text);
+        closeSwipe();
+    };
+
     return (
         <Swipeable
             ref={swipeableRef}
+            leftThreshold={100}
+            rightThreshold={100}
+            onSwipeableOpen={(direction) => {
+                if (direction === 'right') {
+                    handleMove();
+                } else if (direction === 'left') {
+                    handleDelete();
+                }
+            }}
+            renderLeftActions={() => (
+                <TouchableOpacity style={styles.moveBox} onPress={handleMove}>
+                    <View>
+                        <Text style={styles.moveText}>Move</Text>
+                    </View>
+                </TouchableOpacity>
+            )}
             renderRightActions={() => (
                 <TouchableOpacity style={styles.deleteBox} onPress={handleDelete}>
                     <View>
@@ -71,6 +92,17 @@ const styles = StyleSheet.create({
     deleteBox: {
         backgroundColor: "red",
         flex: 0.2
+    },
+    moveBox: {
+        backgroundColor: "#1E90FF",
+        flex: 0.2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    moveText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
     dragHandle: {
         width: 20,
