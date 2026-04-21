@@ -174,12 +174,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   gridItem: {
-    width: '25%',
+    width: '33.3333%',
     aspectRatio: 1,
     padding: GAP,
   },
   wideItem: {
-    width: '50%',
+    width: '66.6666%',
     aspectRatio: 2,
     padding: GAP,
   },
