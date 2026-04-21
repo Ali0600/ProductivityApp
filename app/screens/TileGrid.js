@@ -16,7 +16,7 @@ import FeatherIcons from '@expo/vector-icons/Feather';
 import Tile from '../components/Tile';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
 
-const LONG_NAME_THRESHOLD = 8;
+const LONG_NAME_THRESHOLD = 5;
 const isLongName = (name) => (name?.length ?? 0) > LONG_NAME_THRESHOLD;
 
 function TileGrid() {
