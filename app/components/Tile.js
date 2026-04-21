@@ -1,16 +1,44 @@
 import { memo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, Alert, ActionSheetIOS } from 'react-native';
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
 
-const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) => {
+const WEIGHT_TIERS = [
+  { label: 'Small', value: 1 },
+  { label: 'Medium', value: 2 },
+  { label: 'Large', value: 3 },
+  { label: 'Hero', value: 4 },
+];
+
+const Tile = ({ name, weight, isPlus, onPress, onRename, onDelete, onSetWeight, style, textStyle }) => {
   const handlePress = () => {
     if (onPress) onPress(name);
+  };
+
+  const openWeightPicker = () => {
+    const options = [...WEIGHT_TIERS.map((t) => t.label), 'Cancel'];
+    const cancelIdx = options.length - 1;
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: `Size for "${name}"`,
+        options,
+        cancelButtonIndex: cancelIdx,
+      },
+      (idx) => {
+        if (idx === cancelIdx) return;
+        const tier = WEIGHT_TIERS[idx];
+        if (tier && onSetWeight) onSetWeight(name, tier.value);
+      }
+    );
   };
 
   const handleLongPress = () => {
     if (isPlus) return;
     Alert.alert(name, 'Manage this list', [
       { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Set Size',
+        onPress: openWeightPicker,
+      },
       {
         text: 'Rename',
         onPress: () => {

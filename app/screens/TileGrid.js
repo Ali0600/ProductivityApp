@@ -16,37 +16,32 @@ import FeatherIcons from '@expo/vector-icons/Feather';
 import Tile from '../components/Tile';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
 
-// Sort by staleness (oldest lastCompletedAt first); nulls treated as neutral (middle)
-const orderByStaleness = (mainListsWithStaleness) => {
-  const hasCompleted = mainListsWithStaleness
-    .filter((ml) => ml.lastCompletedAt != null)
-    .sort((a, b) => new Date(a.lastCompletedAt) - new Date(b.lastCompletedAt));
-  const nulls = mainListsWithStaleness.filter((ml) => ml.lastCompletedAt == null);
-  const mid = Math.floor(hasCompleted.length / 2);
-  return [...hasCompleted.slice(0, mid), ...nulls, ...hasCompleted.slice(mid)];
-};
+// Sort by user-set weight, descending. Stable within a tier (preserves insertion order).
+const orderByWeight = (mainListsWithWeight) =>
+  [...mainListsWithWeight].sort((a, b) => b.weight - a.weight);
 
 function TileGrid() {
   const { isLoading, error } = useAppLoading();
   const {
-    mainListsWithStaleness,
+    mainListsWithWeight,
     addMainList,
     removeMainList,
     renameMainList,
+    setMainListWeight,
     switchMainList,
   } = useMainLists();
 
   const [addVisible, setAddVisible] = useState(false);
   const [newName, setNewName] = useState('');
 
-  const ordered = useMemo(() => orderByStaleness(mainListsWithStaleness), [
-    mainListsWithStaleness,
+  const ordered = useMemo(() => orderByWeight(mainListsWithWeight), [
+    mainListsWithWeight,
   ]);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
     if (!trimmed) return;
-    if (mainListsWithStaleness.some((ml) => ml.name === trimmed)) {
+    if (mainListsWithWeight.some((ml) => ml.name === trimmed)) {
       Alert.alert('Duplicate', `A list called "${trimmed}" already exists.`);
       return;
     }
@@ -60,26 +55,32 @@ function TileGrid() {
       <View style={styles.heroBig}>
         <Tile
           name={big.name}
+          weight={big.weight}
           onPress={switchMainList}
           onRename={renameMainList}
           onDelete={removeMainList}
+          onSetWeight={setMainListWeight}
         />
       </View>
       <View style={styles.heroCol}>
         <View style={styles.heroSmall}>
           <Tile
             name={smallA.name}
+            weight={smallA.weight}
             onPress={switchMainList}
             onRename={renameMainList}
             onDelete={removeMainList}
+            onSetWeight={setMainListWeight}
           />
         </View>
         <View style={styles.heroSmall}>
           <Tile
             name={smallB.name}
+            weight={smallB.weight}
             onPress={switchMainList}
             onRename={renameMainList}
             onDelete={removeMainList}
+            onSetWeight={setMainListWeight}
           />
         </View>
       </View>
@@ -117,9 +118,11 @@ function TileGrid() {
               <View key={ml.name} style={styles.gridItem}>
                 <Tile
                   name={ml.name}
+                  weight={ml.weight}
                   onPress={switchMainList}
                   onRename={renameMainList}
                   onDelete={removeMainList}
+                  onSetWeight={setMainListWeight}
                 />
               </View>
             ))}

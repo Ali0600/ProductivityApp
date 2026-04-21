@@ -5,9 +5,12 @@ export const AppStateContext = createContext();
 
 const DEFAULT_MAIN_LIST_NAME = 'Tasks';
 
+const DEFAULT_WEIGHT = 2; // Medium tier
+
 const createDefaultMainLists = () => [
   {
     name: DEFAULT_MAIN_LIST_NAME,
+    weight: DEFAULT_WEIGHT,
     sideLists: [
       {
         listName: 'Tasks',
@@ -258,10 +261,18 @@ export const AppStateProvider = ({ children }) => {
         ...prev,
         {
           name,
+          weight: DEFAULT_WEIGHT,
           sideLists: [{ listName: 'Tasks', tasks: [], lastCompletedAt: null }],
         },
       ];
     });
+  }, []);
+
+  const setMainListWeight = useCallback((name, weight) => {
+    if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0) return;
+    setMainLists((prev) =>
+      prev.map((ml) => (ml.name === name ? { ...ml, weight } : ml))
+    );
   }, []);
 
   const removeMainList = useCallback(
@@ -315,31 +326,26 @@ export const AppStateProvider = ({ children }) => {
     return found || { listName: '', tasks: [] };
   }, [lists, currentSideList]);
 
-  // Main lists with aggregated staleness (max lastCompletedAt across side lists)
-  const mainListsWithStaleness = useMemo(
+  // Main lists projected for the tile grid (weight-ordered, see TileGrid).
+  const mainListsWithWeight = useMemo(
     () =>
-      mainLists.map((ml) => {
-        let max = null;
-        for (const sl of ml.sideLists) {
-          if (sl.lastCompletedAt) {
-            const t = new Date(sl.lastCompletedAt).getTime();
-            if (max === null || t > max) max = t;
-          }
-        }
-        return { name: ml.name, lastCompletedAt: max ? new Date(max) : null };
-      }),
+      mainLists.map((ml) => ({
+        name: ml.name,
+        weight: typeof ml.weight === 'number' && ml.weight > 0 ? ml.weight : DEFAULT_WEIGHT,
+      })),
     [mainLists]
   );
 
   const contextValue = useMemo(
     () => ({
       mainLists,
-      mainListsWithStaleness,
+      mainListsWithWeight,
       currentMainList,
       currentMainData,
       addMainList,
       removeMainList,
       renameMainList,
+      setMainListWeight,
       switchMainList,
       exitToTileGrid,
       lists,
@@ -362,12 +368,13 @@ export const AppStateProvider = ({ children }) => {
     }),
     [
       mainLists,
-      mainListsWithStaleness,
+      mainListsWithWeight,
       currentMainList,
       currentMainData,
       addMainList,
       removeMainList,
       renameMainList,
+      setMainListWeight,
       switchMainList,
       exitToTileGrid,
       lists,
