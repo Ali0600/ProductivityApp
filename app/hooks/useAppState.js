@@ -92,26 +92,22 @@ export const useLists = () => {
 export const useMainLists = () => {
   const {
     mainLists,
-    mainListsWithWeight,
     currentMainList,
     currentMainData,
     addMainList,
     removeMainList,
     renameMainList,
-    setMainListWeight,
     switchMainList,
     exitToTileGrid,
   } = useAppState();
 
   return {
     mainLists,
-    mainListsWithWeight,
     currentMainList,
     currentMainData,
     addMainList,
     removeMainList,
     renameMainList,
-    setMainListWeight,
     switchMainList,
     exitToTileGrid,
   };
