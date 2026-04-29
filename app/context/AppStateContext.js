@@ -315,26 +315,9 @@ export const AppStateProvider = ({ children }) => {
     return found || { listName: '', tasks: [] };
   }, [lists, currentSideList]);
 
-  // Main lists with aggregated staleness (max lastCompletedAt across side lists)
-  const mainListsWithStaleness = useMemo(
-    () =>
-      mainLists.map((ml) => {
-        let max = null;
-        for (const sl of ml.sideLists) {
-          if (sl.lastCompletedAt) {
-            const t = new Date(sl.lastCompletedAt).getTime();
-            if (max === null || t > max) max = t;
-          }
-        }
-        return { name: ml.name, lastCompletedAt: max ? new Date(max) : null };
-      }),
-    [mainLists]
-  );
-
   const contextValue = useMemo(
     () => ({
       mainLists,
-      mainListsWithStaleness,
       currentMainList,
       currentMainData,
       addMainList,
@@ -362,7 +345,6 @@ export const AppStateProvider = ({ children }) => {
     }),
     [
       mainLists,
-      mainListsWithStaleness,
       currentMainList,
       currentMainData,
       addMainList,

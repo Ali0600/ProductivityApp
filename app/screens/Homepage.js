@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert } from "react-native";
+import { useState, useCallback, useEffect } from "react";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
+import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
@@ -15,8 +16,18 @@ function Homepage(props){
     const [menuVisible, setMenuPanalVisible] = useState(false);
     const [taskListVisible, setTaskListVisible] = useState(false);
     const [settingsVisible, setSettingsVisible] = useState(false);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
+
+    useEffect(() => {
+        NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
+    }, []);
+
+    const handleToggleNotifications = useCallback(async (next) => {
+        setNotificationsEnabled(next);
+        await NotificationService.setNotificationsEnabled(next);
+    }, []);
 
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
@@ -203,6 +214,14 @@ function Homepage(props){
                     <Modal visible={settingsVisible} animationType="slide" transparent={true}>
                         <View style={styles.modalContent}>
                             <Text style={styles.settingsTitle}>Notification Settings</Text>
+
+                            <View style={styles.settingsRow}>
+                                <Text style={styles.settingsRowLabel}>Notifications</Text>
+                                <Switch
+                                    value={notificationsEnabled}
+                                    onValueChange={handleToggleNotifications}
+                                />
+                            </View>
                         </View>
 
                         <View style={styles.buttonWrapper}>
@@ -353,6 +372,16 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 20,
         marginTop: 10,
+    },
+    settingsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+    },
+    settingsRowLabel: {
+        fontSize: 18,
     }
   })
 

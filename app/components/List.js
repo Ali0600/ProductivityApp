@@ -1,5 +1,5 @@
 import { memo, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
@@ -18,8 +18,21 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
     };
 
     const handleDelete = () => {
-        onRemove(text);
-        closeSwipe();
+        Alert.alert(
+            'Delete List',
+            `Delete "${text}" and all its tasks?`,
+            [
+                { text: 'Cancel', style: 'cancel', onPress: closeSwipe },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                        onRemove(text);
+                        closeSwipe();
+                    },
+                },
+            ]
+        );
     };
 
     const handleMove = () => {

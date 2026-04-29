@@ -21,8 +21,13 @@ export default function App() {
         const token = await NotificationService.registerForPushNotificationsAsync();
         await NotificationService.initializeBackgroundNotifications();
 
-        await NotificationService.scheduleRecurringNotifications();
-        console.log('🔔 APP.JS: Scheduled recurring notifications');
+        const notificationsEnabled = await NotificationService.getNotificationsEnabled();
+        if (notificationsEnabled) {
+          await NotificationService.scheduleRecurringNotifications();
+          console.log('🔔 APP.JS: Scheduled recurring notifications');
+        } else {
+          console.log('🔔 APP.JS: Notifications disabled by user, skipping schedule');
+        }
       } catch (error) {
         console.error('🔔 APP.JS: Error in notification setup:', error);
       }

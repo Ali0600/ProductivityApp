@@ -92,7 +92,6 @@ export const useLists = () => {
 export const useMainLists = () => {
   const {
     mainLists,
-    mainListsWithStaleness,
     currentMainList,
     currentMainData,
     addMainList,
@@ -104,7 +103,6 @@ export const useMainLists = () => {
 
   return {
     mainLists,
-    mainListsWithStaleness,
     currentMainList,
     currentMainData,
     addMainList,

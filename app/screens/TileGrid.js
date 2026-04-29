@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,20 +16,13 @@ import FeatherIcons from '@expo/vector-icons/Feather';
 import Tile from '../components/Tile';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
 
-// Sort by staleness (oldest lastCompletedAt first); nulls treated as neutral (middle)
-const orderByStaleness = (mainListsWithStaleness) => {
-  const hasCompleted = mainListsWithStaleness
-    .filter((ml) => ml.lastCompletedAt != null)
-    .sort((a, b) => new Date(a.lastCompletedAt) - new Date(b.lastCompletedAt));
-  const nulls = mainListsWithStaleness.filter((ml) => ml.lastCompletedAt == null);
-  const mid = Math.floor(hasCompleted.length / 2);
-  return [...hasCompleted.slice(0, mid), ...nulls, ...hasCompleted.slice(mid)];
-};
+const LONG_NAME_THRESHOLD = 5;
+const isLongName = (name) => (name?.length ?? 0) > LONG_NAME_THRESHOLD;
 
 function TileGrid() {
   const { isLoading, error } = useAppLoading();
   const {
-    mainListsWithStaleness,
+    mainLists,
     addMainList,
     removeMainList,
     renameMainList,
@@ -39,14 +32,13 @@ function TileGrid() {
   const [addVisible, setAddVisible] = useState(false);
   const [newName, setNewName] = useState('');
 
-  const ordered = useMemo(() => orderByStaleness(mainListsWithStaleness), [
-    mainListsWithStaleness,
-  ]);
+  const hero = mainLists[0];
+  const rest = mainLists.slice(1);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
     if (!trimmed) return;
-    if (mainListsWithStaleness.some((ml) => ml.name === trimmed)) {
+    if (mainLists.some((ml) => ml.name === trimmed)) {
       Alert.alert('Duplicate', `A list called "${trimmed}" already exists.`);
       return;
     }
@@ -54,41 +46,6 @@ function TileGrid() {
     setNewName('');
     setAddVisible(false);
   };
-
-  const renderHero = (big, smallA, smallB) => (
-    <View style={styles.heroRow}>
-      <View style={styles.heroBig}>
-        <Tile
-          name={big.name}
-          onPress={switchMainList}
-          onRename={renameMainList}
-          onDelete={removeMainList}
-        />
-      </View>
-      <View style={styles.heroCol}>
-        <View style={styles.heroSmall}>
-          <Tile
-            name={smallA.name}
-            onPress={switchMainList}
-            onRename={renameMainList}
-            onDelete={removeMainList}
-          />
-        </View>
-        <View style={styles.heroSmall}>
-          <Tile
-            name={smallB.name}
-            onPress={switchMainList}
-            onRename={renameMainList}
-            onDelete={removeMainList}
-          />
-        </View>
-      </View>
-    </View>
-  );
-
-  const hasHero = ordered.length >= 3;
-  const heroTiles = hasHero ? ordered.slice(0, 3) : [];
-  const gridTiles = hasHero ? ordered.slice(3) : ordered;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,11 +67,23 @@ function TileGrid() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {hasHero && renderHero(heroTiles[0], heroTiles[1], heroTiles[2])}
+          {hero && (
+            <View style={styles.heroItem}>
+              <Tile
+                name={hero.name}
+                onPress={switchMainList}
+                onRename={renameMainList}
+                onDelete={removeMainList}
+              />
+            </View>
+          )}
 
           <View style={styles.grid}>
-            {gridTiles.map((ml) => (
-              <View key={ml.name} style={styles.gridItem}>
+            {rest.map((ml) => (
+              <View
+                key={ml.name}
+                style={isLongName(ml.name) ? styles.wideItem : styles.gridItem}
+              >
                 <Tile
                   name={ml.name}
                   onPress={switchMainList}
@@ -195,21 +164,9 @@ const styles = StyleSheet.create({
     padding: GAP,
     paddingBottom: 40,
   },
-  heroRow: {
-    flexDirection: 'row',
-  },
-  heroBig: {
-    flex: 2,
-    aspectRatio: 1,
-    padding: GAP,
-  },
-  heroCol: {
-    flex: 1,
-    flexDirection: 'column',
-  },
-  heroSmall: {
-    flex: 1,
-    aspectRatio: 1,
+  heroItem: {
+    width: '100%',
+    aspectRatio: 2,
     padding: GAP,
   },
   grid: {
@@ -219,6 +176,11 @@ const styles = StyleSheet.create({
   gridItem: {
     width: '33.3333%',
     aspectRatio: 1,
+    padding: GAP,
+  },
+  wideItem: {
+    width: '66.6666%',
+    aspectRatio: 2,
     padding: GAP,
   },
   modalOverlay: {

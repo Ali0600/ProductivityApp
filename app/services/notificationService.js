@@ -16,7 +16,36 @@ Notifications.setNotificationHandler({
 export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
+  static NOTIFICATIONS_ENABLED_KEY = 'notificationsEnabled';
   static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
+
+  static async getNotificationsEnabled() {
+    try {
+      const value = await AsyncStorage.getItem(this.NOTIFICATIONS_ENABLED_KEY);
+      // Missing key = first launch; default to enabled to preserve prior behavior.
+      return value === null ? true : value === 'true';
+    } catch (error) {
+      console.error('Error reading notifications-enabled flag:', error);
+      return true;
+    }
+  }
+
+  static async setNotificationsEnabled(enabled) {
+    try {
+      await AsyncStorage.setItem(this.NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
+      if (enabled) {
+        await this.scheduleRecurringNotifications();
+      } else {
+        await this.cancelRecurringNotifications();
+        await this.cancelAllNotifications();
+        await this.cancelTaskReminder();
+      }
+      return true;
+    } catch (error) {
+      console.error('Error setting notifications-enabled flag:', error);
+      return false;
+    }
+  }
 
   /**
    * Initialize background notification handling
