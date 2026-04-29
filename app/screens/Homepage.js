@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInpu
 import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
+import GlassCard from "../components/GlassCard";
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
 import EntypoIcons from '@expo/vector-icons/Entypo';
 import FeatherIcons from '@expo/vector-icons/Feather'
@@ -126,17 +127,17 @@ function Homepage(props){
                 </View>
             ) : (
                 <>
-                    <Modal visible={modalVisible} animationType="slide" transparent={true}> 
-                        <View style={styles.modalContent}>
+                    <Modal visible={modalVisible} animationType="slide" transparent={true}>
+                        <GlassCard style={styles.modalContent}>
                             <TextInput
                                 style={styles.inputForms}
                                 onChangeText={text => setTask(text)}
                                 placeholder={'Task Name'}
                                 value={task}
                             />
-                        </View>
+                        </GlassCard>
 
-                        <View style={styles.buttonWrapper}>
+                        <GlassCard style={styles.buttonWrapper}>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <AntDesignIcons name='minuscircle' size={60} />
                             </TouchableOpacity>
@@ -144,13 +145,13 @@ function Homepage(props){
                             <TouchableOpacity onPress={handleAddTask}>
                                 <AntDesignIcons name='pluscircle' size={60} />
                             </TouchableOpacity>
-                        </View>
+                        </GlassCard>
                     </Modal>
 
                     <Modal visible={menuVisible} animationType="slide" transparent={true}>
                       <GestureHandlerRootView style={{ flex: 1 }}>
                         <SafeAreaView style={styles.menuContainer}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white' }}>
+                            <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                                 <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
                                     <AntDesignIcons name='closecircle' size={40} />
                                 </TouchableOpacity>
@@ -160,7 +161,7 @@ function Homepage(props){
                                 <TouchableOpacity onPress={() => setTaskListVisible(true)}>
                                     <AntDesignIcons name='pluscircle' size={40} />
                                 </TouchableOpacity>
-                            </View>
+                            </GlassCard>
                             
                             <View style={styles.menuLists}>
                                 <DraggableFlatList
@@ -190,16 +191,16 @@ function Homepage(props){
                       </GestureHandlerRootView>
 
                         <Modal visible={taskListVisible} animationType="slide" transparent={true}>
-                            <View style={styles.modalContent}>
+                            <GlassCard style={styles.modalContent}>
                                 <TextInput
                                     style={styles.inputForms}
                                     onChangeText={text => setNewListName(text)}
                                     value={newListName}
                                     placeholder={'Task List Name'}
                                 />
-                            </View>
+                            </GlassCard>
 
-                            <View style={styles.buttonWrapper}>
+                            <GlassCard style={styles.buttonWrapper}>
                                 <TouchableOpacity onPress={() => setTaskListVisible(false)}>
                                     <AntDesignIcons name='minuscircle' size={60} />
                                 </TouchableOpacity>
@@ -207,12 +208,12 @@ function Homepage(props){
                                 <TouchableOpacity onPress={handleAddNewList}>
                                     <AntDesignIcons name='pluscircle' size={60} />
                                 </TouchableOpacity>
-                            </View>
+                            </GlassCard>
                         </Modal>
                     </Modal>
 
                     <Modal visible={settingsVisible} animationType="slide" transparent={true}>
-                        <View style={styles.modalContent}>
+                        <GlassCard style={styles.modalContent}>
                             <Text style={styles.settingsTitle}>Notification Settings</Text>
 
                             <View style={styles.settingsRow}>
@@ -222,9 +223,9 @@ function Homepage(props){
                                     onValueChange={handleToggleNotifications}
                                 />
                             </View>
-                        </View>
+                        </GlassCard>
 
-                        <View style={styles.buttonWrapper}>
+                        <GlassCard style={styles.buttonWrapper}>
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
                                 <AntDesignIcons name='closecircle' size={60} />
                             </TouchableOpacity>
@@ -232,11 +233,11 @@ function Homepage(props){
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
                                 <AntDesignIcons name='checkcircle' size={60} />
                             </TouchableOpacity>
-                        </View>
+                        </GlassCard>
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
                                <EntypoIcons name='menu' size={40} />
                             </TouchableOpacity>
@@ -248,7 +249,7 @@ function Homepage(props){
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
                                <FeatherIcons name='settings' size={40}/>
                             </TouchableOpacity>
-                        </View>
+                        </GlassCard>
                     </SafeAreaView>
 
                     <FlatList
@@ -272,7 +273,7 @@ function Homepage(props){
                         }
                     />
 
-                    <View style={[styles.buttonWrapper, styles.bottomNav]}>
+                    <GlassCard style={[styles.buttonWrapper, styles.bottomNav]}>
                         <TouchableOpacity onPress={() => cycleList(-1)}>
                             <AntDesignIcons name='leftcircle' size={50} />
                         </TouchableOpacity>
@@ -284,7 +285,7 @@ function Homepage(props){
                         <TouchableOpacity onPress={() => cycleList(1)}>
                             <AntDesignIcons name='rightcircle' size={50} />
                         </TouchableOpacity>
-                    </View>
+                    </GlassCard>
 
                     <KeyboardAvoidingView behavior="padding" />
                 </>
@@ -295,7 +296,6 @@ function Homepage(props){
 
 const styles = StyleSheet.create({
     container: {
-      backgroundColor: "black",
       flex: 1,
     },
     loadingContainer: {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
       textAlign: 'center',
     },
     productName: {
-        backgroundColor: "white",
+        backgroundColor: "transparent",
     },
     textFont: {
         fontSize: 24,
@@ -333,7 +333,6 @@ const styles = StyleSheet.create({
         width: "100%",
         paddingBottom: 35,
         paddingTop: 10,
-        backgroundColor: "white",
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -343,13 +342,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     modalContent:{
-        backgroundColor: "white",
         flex: 1,
         margin: 20,
         marginTop: 40,
         borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "black"
+        overflow: 'hidden',
     },
     inputForms: {
         padding: 10,
@@ -363,7 +360,6 @@ const styles = StyleSheet.create({
         justifyContent: "flex-start"
     },
     menuLists: {
-        backgroundColor: "black",
         flex: 1,
     },
     settingsTitle: {

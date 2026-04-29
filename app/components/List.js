@@ -1,6 +1,7 @@
 import { memo, useRef } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import GlassCard from './GlassCard';
 
 const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
     const swipeableRef = useRef(null);
@@ -67,32 +68,37 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
                 </TouchableOpacity>
             )}
         >
-            <TouchableOpacity
-                onLongPress={drag}
-                onPress={handlePress}
-                activeOpacity={0.7}
-                style={[styles.listContainer, isActive && styles.activeItem]}
+            <GlassCard
+                style={[styles.listCard, isActive && styles.activeItem]}
+                tintColor={isActive ? 'rgba(255,255,255,0.3)' : undefined}
             >
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <View style={styles.dragHandle} />
-                    <Text>{text}</Text>
-                </View>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    onLongPress={drag}
+                    onPress={handlePress}
+                    activeOpacity={0.7}
+                    style={styles.listContainer}
+                >
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <View style={styles.dragHandle} />
+                        <Text>{text}</Text>
+                    </View>
+                </TouchableOpacity>
+            </GlassCard>
         </Swipeable>
     );
 }
 
 const styles = StyleSheet.create({
+    listCard: {
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
     listContainer: {
-        backgroundColor: "white",
         flexDirection: "row",
         padding: 20,
-        borderRadius: 20,
-        borderColor: "black",
         justifyContent: "space-between"
     },
     activeItem: {
-        backgroundColor: "#E8E8E8",
         shadowColor: "#000",
         shadowOffset: {
             width: 0,

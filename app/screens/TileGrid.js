@@ -14,6 +14,7 @@ import {
 import AntDesignIcons from '@expo/vector-icons/AntDesign';
 import FeatherIcons from '@expo/vector-icons/Feather';
 import Tile from '../components/Tile';
+import GlassCard from '../components/GlassCard';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
 
 const LONG_NAME_THRESHOLD = 5;
@@ -101,7 +102,7 @@ function TileGrid() {
 
       <Modal visible={addVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <GlassCard style={styles.modalCard}>
             <Text style={styles.modalTitle}>New List</Text>
             <TextInput
               style={styles.input}
@@ -123,7 +124,7 @@ function TileGrid() {
                 <AntDesignIcons name="pluscircle" size={50} />
               </TouchableOpacity>
             </View>
-          </View>
+          </GlassCard>
         </View>
       </Modal>
     </SafeAreaView>
@@ -135,7 +136,6 @@ const GAP = 6;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
   },
   topBar: {
     flexDirection: 'row',
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'black',
   },
   title: {
     fontSize: 24,
@@ -191,9 +190,9 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '85%',
-    backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
+    overflow: 'hidden',
   },
   modalTitle: {
     fontSize: 20,

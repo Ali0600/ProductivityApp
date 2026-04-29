@@ -1,4 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import Homepage from './app/screens/Homepage';
 import TileGrid from './app/screens/TileGrid';
 import 'react-native-gesture-handler';
@@ -38,9 +40,17 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppStateProvider>
-        <RootScreen />
-      </AppStateProvider>
+      <LinearGradient
+        style={{ flex: 1 }}
+        colors={['#1a1a3a', '#0f0f24', '#070712', '#000000']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      >
+        <StatusBar style="light" />
+        <AppStateProvider>
+          <RootScreen />
+        </AppStateProvider>
+      </LinearGradient>
     </GestureHandlerRootView>
   );
 }

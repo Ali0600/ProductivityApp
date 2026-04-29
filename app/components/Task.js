@@ -1,6 +1,7 @@
 import { memo, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import GlassCard from './GlassCard';
 
 const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
     const swipeableRef = useRef(null);
@@ -108,25 +109,28 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                 </TouchableOpacity>
             )}
         >
-            <TouchableOpacity
-                style={styles.taskContainer}
-                onLongPress={handleEdit}
-                delayLongPress={500}
-            >
-                <Text>{text}</Text>
-                <Text>{creationTime.toString()}</Text>
-            </TouchableOpacity>
+            <GlassCard style={styles.taskCard}>
+                <TouchableOpacity
+                    style={styles.taskContainer}
+                    onLongPress={handleEdit}
+                    delayLongPress={500}
+                >
+                    <Text>{text}</Text>
+                    <Text>{creationTime.toString()}</Text>
+                </TouchableOpacity>
+            </GlassCard>
         </Swipeable>
     );
 }
 
 const styles = StyleSheet.create({
+    taskCard: {
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
     taskContainer: {
-        backgroundColor: "white",
         flexDirection: "row",
         padding: 20,
-        borderRadius: 20,
-        borderColor: "black",
         justifyContent: "space-between"
     },
     deleteBox: {
