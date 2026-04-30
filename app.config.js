@@ -6,7 +6,7 @@ export default ({ config }) => {
     expo: {
       name: "ADHD Habits",
       slug: "adhd-habits",
-      version: "1.0.29",
+      version: "1.0.30",
       orientation: "portrait",
       icon: "./app/assets/icon.png",
       userInterfaceStyle: "light",
@@ -55,7 +55,8 @@ export default ({ config }) => {
             color: "#ffffff",
             sounds: []
           }
-        ]
+        ],
+        "expo-font"
       ]
     }
   };
