@@ -9,6 +9,7 @@ const GlassCard = ({
   glassEffectStyle = 'regular',
   tintColor,
   isInteractive = false,
+  colorScheme = 'auto',
   fallbackColor = '#1f1f2e',
   ...rest
 }) => {
@@ -19,6 +20,7 @@ const GlassCard = ({
         glassEffectStyle={glassEffectStyle}
         tintColor={tintColor}
         isInteractive={isInteractive}
+        colorScheme={colorScheme}
         {...rest}
       >
         {children}

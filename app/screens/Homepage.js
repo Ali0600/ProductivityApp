@@ -239,7 +239,11 @@ function Homepage(props){
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
-                        <GlassCard style={styles.topBar}>
+                        <GlassCard
+                            style={styles.topBar}
+                            tintColor="rgba(46, 46, 80, 0.45)"
+                            colorScheme="dark"
+                        >
                             <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
                                <EntypoIcons name='menu' size={40} color="white" />
                             </TouchableOpacity>
@@ -275,7 +279,11 @@ function Homepage(props){
                         }
                     />
 
-                    <GlassCard style={styles.bottomNav}>
+                    <GlassCard
+                        style={styles.bottomNav}
+                        tintColor="rgba(46, 46, 80, 0.45)"
+                        colorScheme="dark"
+                    >
                         <TouchableOpacity onPress={() => cycleList(-1)}>
                             <AntDesignIcons name='left-circle' size={50} color="white" />
                         </TouchableOpacity>
