@@ -1,6 +1,43 @@
 import { memo, useRef } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { SymbolView } from 'expo-symbols';
+import GlassCard from './GlassCard';
+
+const RightAction = ({ progress, onPress }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const p = Math.min(progress.value, 1);
+        return {
+            opacity: p,
+            transform: [{ scale: 0.7 + 0.3 * p }],
+        };
+    });
+    return (
+        <Animated.View style={[styles.deleteBox, animatedStyle]}>
+            <TouchableOpacity style={styles.actionTouch} onPress={onPress}>
+                <SymbolView name="trash.fill" size={28} tintColor="white" />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
+
+const LeftAction = ({ progress, onPress }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const p = Math.min(progress.value, 1);
+        return {
+            opacity: p,
+            transform: [{ scale: 0.7 + 0.3 * p }],
+        };
+    });
+    return (
+        <Animated.View style={[styles.moveBox, animatedStyle]}>
+            <TouchableOpacity style={styles.actionTouch} onPress={onPress}>
+                <SymbolView name="folder.fill" size={28} tintColor="white" />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
     const swipeableRef = useRef(null);
@@ -52,47 +89,45 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
                     handleDelete();
                 }
             }}
-            renderLeftActions={() => (
-                <TouchableOpacity style={styles.moveBox} onPress={handleMove}>
-                    <View>
-                        <Text style={styles.moveText}>Move</Text>
-                    </View>
-                </TouchableOpacity>
+            renderLeftActions={(progress) => (
+                <LeftAction progress={progress} onPress={handleMove} />
             )}
-            renderRightActions={() => (
-                <TouchableOpacity style={styles.deleteBox} onPress={handleDelete}>
-                    <View>
-                        <Text>Delete</Text>
-                    </View>
-                </TouchableOpacity>
+            renderRightActions={(progress) => (
+                <RightAction progress={progress} onPress={handleDelete} />
             )}
         >
-            <TouchableOpacity
-                onLongPress={drag}
-                onPress={handlePress}
-                activeOpacity={0.7}
-                style={[styles.listContainer, isActive && styles.activeItem]}
+            <GlassCard
+                style={[styles.listCard, isActive && styles.activeItem]}
+                colorScheme="dark"
+                tintColor={isActive ? 'rgba(255,255,255,0.3)' : 'rgba(46, 46, 80, 0.35)'}
             >
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <View style={styles.dragHandle} />
-                    <Text>{text}</Text>
-                </View>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    onLongPress={drag}
+                    onPress={handlePress}
+                    activeOpacity={0.7}
+                    style={styles.listContainer}
+                >
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <View style={styles.dragHandle} />
+                        <Text style={styles.listText}>{text}</Text>
+                    </View>
+                </TouchableOpacity>
+            </GlassCard>
         </Swipeable>
     );
 }
 
 const styles = StyleSheet.create({
+    listCard: {
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
     listContainer: {
-        backgroundColor: "white",
         flexDirection: "row",
         padding: 20,
-        borderRadius: 20,
-        borderColor: "black",
         justifyContent: "space-between"
     },
     activeItem: {
-        backgroundColor: "#E8E8E8",
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
@@ -103,19 +138,31 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     deleteBox: {
-        backgroundColor: "red",
-        flex: 0.2
-    },
-    moveBox: {
-        backgroundColor: "#1E90FF",
-        flex: 0.2,
+        width: 80,
+        backgroundColor: 'rgba(200, 60, 60, 0.85)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        borderRadius: 20,
+        marginVertical: 2,
+        marginLeft: 8,
     },
-    moveText: {
+    moveBox: {
+        width: 80,
+        backgroundColor: 'rgba(70, 130, 210, 0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        marginVertical: 2,
+        marginRight: 8,
+    },
+    actionTouch: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listText: {
         color: 'white',
-        fontWeight: 'bold',
     },
     dragHandle: {
         width: 20,

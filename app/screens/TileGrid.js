@@ -11,9 +11,9 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import AntDesignIcons from '@expo/vector-icons/AntDesign';
-import FeatherIcons from '@expo/vector-icons/Feather';
+import { SymbolView } from 'expo-symbols';
 import Tile from '../components/Tile';
+import GlassCard from '../components/GlassCard';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
 
 const LONG_NAME_THRESHOLD = 5;
@@ -53,7 +53,7 @@ function TileGrid() {
         <View style={{ width: 40 }} />
         <Text style={styles.title}>ADHDone</Text>
         <TouchableOpacity onPress={() => {}}>
-          <FeatherIcons name="settings" size={32} color="white" />
+          <SymbolView name="gearshape" size={32} tintColor="white" />
         </TouchableOpacity>
       </View>
 
@@ -101,13 +101,14 @@ function TileGrid() {
 
       <Modal visible={addVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <GlassCard style={styles.modalCard}>
             <Text style={styles.modalTitle}>New List</Text>
             <TextInput
               style={styles.input}
               onChangeText={setNewName}
               value={newName}
               placeholder="List name"
+              placeholderTextColor="rgba(255,255,255,0.5)"
               autoFocus
             />
             <View style={styles.modalButtons}>
@@ -117,13 +118,13 @@ function TileGrid() {
                   setAddVisible(false);
                 }}
               >
-                <AntDesignIcons name="minuscircle" size={50} />
+                <SymbolView name="minus.circle.fill" size={50} tintColor="white" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAdd}>
-                <AntDesignIcons name="pluscircle" size={50} />
+                <SymbolView name="plus.circle.fill" size={50} tintColor="white" />
               </TouchableOpacity>
             </View>
-          </View>
+          </GlassCard>
         </View>
       </Modal>
     </SafeAreaView>
@@ -135,7 +136,6 @@ const GAP = 6;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
   },
   topBar: {
     flexDirection: 'row',
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'black',
   },
   title: {
     fontSize: 24,
@@ -191,22 +190,24 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '85%',
-    backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
+    overflow: 'hidden',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: 'white',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: 'rgba(255,255,255,0.4)',
     borderRadius: 8,
     padding: 10,
     marginBottom: 20,
+    color: 'white',
   },
   modalButtons: {
     flexDirection: 'row',

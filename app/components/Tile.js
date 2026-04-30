@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
-import AntDesignIcons from '@expo/vector-icons/AntDesign';
+import { SymbolView } from 'expo-symbols';
+import GlassCard from './GlassCard';
 
 const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) => {
   const handlePress = () => {
@@ -50,35 +51,44 @@ const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) =
   };
 
   return (
-    <TouchableOpacity
+    <GlassCard
       style={[styles.tile, isPlus && styles.plusTile, style]}
-      activeOpacity={0.7}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      delayLongPress={500}
+      colorScheme="dark"
+      tintColor={isPlus ? undefined : 'rgba(46, 46, 80, 0.45)'}
+      fallbackColor={isPlus ? '#1a1a1a' : '#1f1f2e'}
     >
-      {isPlus ? (
-        <AntDesignIcons name="plus" size={40} color="#888" />
-      ) : (
-        <Text style={[styles.text, textStyle]} numberOfLines={2} adjustsFontSizeToFit>
-          {name}
-        </Text>
-      )}
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.touchable}
+        activeOpacity={0.7}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        delayLongPress={500}
+      >
+        {isPlus ? (
+          <SymbolView name="plus" size={40} tintColor="#888" />
+        ) : (
+          <Text style={[styles.text, textStyle]} numberOfLines={2} adjustsFontSizeToFit>
+            {name}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </GlassCard>
   );
 };
 
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: 'white',
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  touchable: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 12,
   },
   plusTile: {
-    backgroundColor: '#1a1a1a',
     borderWidth: 2,
     borderColor: '#333',
     borderStyle: 'dashed',
@@ -86,7 +96,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 20,
     fontWeight: '600',
-    color: 'black',
+    color: 'white',
     textAlign: 'center',
   },
 });

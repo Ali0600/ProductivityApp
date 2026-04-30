@@ -1,6 +1,43 @@
 import { memo, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { SymbolView } from 'expo-symbols';
+import GlassCard from './GlassCard';
+
+const RightAction = ({ progress, onPress }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const p = Math.min(progress.value, 1);
+        return {
+            opacity: p,
+            transform: [{ scale: 0.7 + 0.3 * p }],
+        };
+    });
+    return (
+        <Animated.View style={[styles.deleteBox, animatedStyle]}>
+            <TouchableOpacity style={styles.actionTouch} onPress={onPress}>
+                <SymbolView name="trash.fill" size={28} tintColor="white" />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
+
+const LeftAction = ({ progress, onPress }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const p = Math.min(progress.value, 1);
+        return {
+            opacity: p,
+            transform: [{ scale: 0.7 + 0.3 * p }],
+        };
+    });
+    return (
+        <Animated.View style={[styles.completeBox, animatedStyle]}>
+            <TouchableOpacity style={styles.actionTouch} onPress={onPress}>
+                <SymbolView name="checkmark.circle.fill" size={28} tintColor="white" />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
     const swipeableRef = useRef(null);
@@ -93,60 +130,71 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                     handleRemove();
                 }
             }}
-            renderRightActions={() => (
-                <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
-                    <View>
-                        <Text style={styles.actionText}>Delete</Text>
-                    </View>
-                </TouchableOpacity>
+            renderRightActions={(progress) => (
+                <RightAction progress={progress} onPress={handleRemove} />
             )}
-            renderLeftActions={() => (
-                <TouchableOpacity style={styles.completeBox} onPress={handleComplete}>
-                    <View>
-                        <Text style={styles.actionText}>Complete</Text>
-                    </View>
-                </TouchableOpacity>
+            renderLeftActions={(progress) => (
+                <LeftAction progress={progress} onPress={handleComplete} />
             )}
         >
-            <TouchableOpacity
-                style={styles.taskContainer}
-                onLongPress={handleEdit}
-                delayLongPress={500}
+            <GlassCard
+                style={styles.taskCard}
+                colorScheme="dark"
+                tintColor="rgba(46, 46, 80, 0.35)"
             >
-                <Text>{text}</Text>
-                <Text>{creationTime.toString()}</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.taskContainer}
+                    onLongPress={handleEdit}
+                    delayLongPress={500}
+                >
+                    <Text style={styles.taskText}>{text}</Text>
+                    <Text style={styles.taskTime}>{creationTime.toString()}</Text>
+                </TouchableOpacity>
+            </GlassCard>
         </Swipeable>
     );
 }
 
 const styles = StyleSheet.create({
+    taskCard: {
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
     taskContainer: {
-        backgroundColor: "white",
         flexDirection: "row",
         padding: 20,
-        borderRadius: 20,
-        borderColor: "black",
         justifyContent: "space-between"
     },
+    taskText: {
+        color: 'white',
+    },
+    taskTime: {
+        color: 'rgba(255,255,255,0.7)',
+    },
     deleteBox: {
-        backgroundColor: "red",
-        flex: 0.2,
+        width: 80,
+        backgroundColor: 'rgba(200, 60, 60, 0.85)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20
+        borderRadius: 20,
+        marginVertical: 2,
+        marginLeft: 8,
     },
     completeBox: {
-        backgroundColor: "green",
-        flex: 0.2,
+        width: 80,
+        backgroundColor: 'rgba(60, 160, 95, 0.85)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20
+        borderRadius: 20,
+        marginVertical: 2,
+        marginRight: 8,
     },
-    actionText: {
-        color: 'white',
-        fontWeight: 'bold'
-    }
+    actionTouch: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 })
 
 export default memo(Task);
