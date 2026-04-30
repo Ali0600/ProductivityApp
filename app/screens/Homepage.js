@@ -8,6 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
 
 function Homepage(props){
@@ -149,7 +150,13 @@ function Homepage(props){
 
                     <Modal visible={menuVisible} animationType="slide" transparent={true}>
                       <GestureHandlerRootView style={{ flex: 1 }}>
-                        <SafeAreaView style={styles.menuContainer}>
+                        <LinearGradient
+                          style={{ flex: 1 }}
+                          colors={['#1a1a3a', '#0f0f24', '#070712', '#000000']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 0, y: 1 }}
+                        >
+                          <SafeAreaView style={styles.menuContainer}>
                             <GlassCard
                                 style={styles.topBar}
                                 colorScheme="dark"
@@ -165,7 +172,7 @@ function Homepage(props){
                                     <SymbolView name="plus.circle.fill" size={40} tintColor="white" />
                                 </TouchableOpacity>
                             </GlassCard>
-                            
+
                             <View style={styles.menuLists}>
                                 <DraggableFlatList
                                     data={lists}
@@ -190,7 +197,8 @@ function Homepage(props){
                                     )}
                                 />
                             </View>
-                        </SafeAreaView>
+                          </SafeAreaView>
+                        </LinearGradient>
                       </GestureHandlerRootView>
 
                         <Modal visible={taskListVisible} animationType="slide" transparent={true}>
