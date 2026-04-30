@@ -6,7 +6,7 @@ export default ({ config }) => {
     expo: {
       name: "ADHD Habits",
       slug: "adhd-habits",
-      version: "1.0.30",
+      version: "1.0.31",
       orientation: "portrait",
       icon: "./app/assets/icon.png",
       userInterfaceStyle: "light",
