@@ -1,11 +1,22 @@
 import { memo, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useAnimatedReaction, runOnJS } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import GlassCard from './GlassCard';
+import { tapMedium, success, warning } from '../services/haptics';
+
+const useThresholdHaptic = (progress) => {
+    useAnimatedReaction(
+        () => progress.value >= 1,
+        (isPast, wasPast) => {
+            if (isPast && !wasPast) runOnJS(tapMedium)();
+        }
+    );
+};
 
 const RightAction = ({ progress, onPress }) => {
+    useThresholdHaptic(progress);
     const animatedStyle = useAnimatedStyle(() => {
         const p = Math.min(progress.value, 1);
         return {
@@ -23,6 +34,7 @@ const RightAction = ({ progress, onPress }) => {
 };
 
 const LeftAction = ({ progress, onPress }) => {
+    useThresholdHaptic(progress);
     const animatedStyle = useAnimatedStyle(() => {
         const p = Math.min(progress.value, 1);
         return {
@@ -62,6 +74,7 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                     text: "Delete",
                     style: "destructive",
                     onPress: () => {
+                        warning();
                         onRemove(index);
                         closeSwipe();
                     }
@@ -84,6 +97,7 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                     text: "Complete",
                     style: "default",
                     onPress: () => {
+                        success();
                         onComplete(index);
                         closeSwipe();
                     }
@@ -93,6 +107,7 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
     };
 
     const handleEdit = () => {
+        tapMedium();
         Alert.prompt(
             "Edit Task",
             "Enter new task name:",

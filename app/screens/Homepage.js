@@ -10,6 +10,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
+import { tapLight, selection } from '../services/haptics';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -51,6 +52,7 @@ function Homepage(props){
         };
 
         console.log("Adding new task:", newTask);
+        tapLight();
         addTaskToList(newTask);
         setTask(''); // Clear input
         setModalVisible(false);
@@ -70,6 +72,7 @@ function Homepage(props){
     const handleAddNewList = () => {
         if (!newListName.trim()) return;
 
+        tapLight();
         addList(newListName);
         setNewListName(''); // Clear input
         setTaskListVisible(false);
@@ -110,6 +113,7 @@ function Homepage(props){
         const idx = lists.findIndex(l => l.listName === currentList);
         if (idx === -1) return;
         const nextIdx = (idx + direction + lists.length) % lists.length;
+        selection();
         switchList(lists[nextIdx].listName);
     }, [lists, currentList, switchList]);
 
