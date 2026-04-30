@@ -70,7 +70,8 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
         >
             <GlassCard
                 style={[styles.listCard, isActive && styles.activeItem]}
-                tintColor={isActive ? 'rgba(255,255,255,0.3)' : undefined}
+                colorScheme="dark"
+                tintColor={isActive ? 'rgba(255,255,255,0.3)' : 'rgba(46, 46, 80, 0.35)'}
             >
                 <TouchableOpacity
                     onLongPress={drag}
