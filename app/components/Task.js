@@ -1,6 +1,7 @@
 import { memo, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { SymbolView } from 'expo-symbols';
 import GlassCard from './GlassCard';
 
 const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
@@ -96,16 +97,12 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
             }}
             renderRightActions={() => (
                 <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
-                    <View>
-                        <Text style={styles.actionText}>Delete</Text>
-                    </View>
+                    <SymbolView name="trash.fill" size={28} tintColor="white" />
                 </TouchableOpacity>
             )}
             renderLeftActions={() => (
                 <TouchableOpacity style={styles.completeBox} onPress={handleComplete}>
-                    <View>
-                        <Text style={styles.actionText}>Complete</Text>
-                    </View>
+                    <SymbolView name="checkmark.circle.fill" size={28} tintColor="white" />
                 </TouchableOpacity>
             )}
         >
@@ -144,23 +141,23 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.7)',
     },
     deleteBox: {
-        backgroundColor: "red",
-        flex: 0.2,
+        width: 80,
+        backgroundColor: 'rgba(200, 60, 60, 0.85)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20
+        borderRadius: 20,
+        marginVertical: 2,
+        marginLeft: 8,
     },
     completeBox: {
-        backgroundColor: "green",
-        flex: 0.2,
+        width: 80,
+        backgroundColor: 'rgba(60, 160, 95, 0.85)',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20
+        borderRadius: 20,
+        marginVertical: 2,
+        marginRight: 8,
     },
-    actionText: {
-        color: 'white',
-        fontWeight: 'bold'
-    }
 })
 
 export default memo(Task);
