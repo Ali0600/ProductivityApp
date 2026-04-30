@@ -63,7 +63,7 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
             renderRightActions={() => (
                 <TouchableOpacity style={styles.deleteBox} onPress={handleDelete}>
                     <View>
-                        <Text>Delete</Text>
+                        <Text style={styles.deleteText}>Delete</Text>
                     </View>
                 </TouchableOpacity>
             )}
@@ -80,7 +80,7 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
                 >
                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
                         <View style={styles.dragHandle} />
-                        <Text>{text}</Text>
+                        <Text style={styles.listText}>{text}</Text>
                     </View>
                 </TouchableOpacity>
             </GlassCard>
@@ -122,6 +122,13 @@ const styles = StyleSheet.create({
     moveText: {
         color: 'white',
         fontWeight: 'bold',
+    },
+    deleteText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    listText: {
+        color: 'white',
     },
     dragHandle: {
         width: 20,

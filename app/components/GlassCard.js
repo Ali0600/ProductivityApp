@@ -9,7 +9,7 @@ const GlassCard = ({
   glassEffectStyle = 'regular',
   tintColor,
   isInteractive = false,
-  fallbackColor = 'white',
+  fallbackColor = '#1f1f2e',
   ...rest
 }) => {
   if (supported) {

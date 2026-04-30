@@ -115,8 +115,8 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                     onLongPress={handleEdit}
                     delayLongPress={500}
                 >
-                    <Text>{text}</Text>
-                    <Text>{creationTime.toString()}</Text>
+                    <Text style={styles.taskText}>{text}</Text>
+                    <Text style={styles.taskTime}>{creationTime.toString()}</Text>
                 </TouchableOpacity>
             </GlassCard>
         </Swipeable>
@@ -132,6 +132,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         padding: 20,
         justifyContent: "space-between"
+    },
+    taskText: {
+        color: 'white',
+    },
+    taskTime: {
+        color: 'rgba(255,255,255,0.7)',
     },
     deleteBox: {
         backgroundColor: "red",

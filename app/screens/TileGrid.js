@@ -109,6 +109,7 @@ function TileGrid() {
               onChangeText={setNewName}
               value={newName}
               placeholder="List name"
+              placeholderTextColor="rgba(255,255,255,0.5)"
               autoFocus
             />
             <View style={styles.modalButtons}>
@@ -118,10 +119,10 @@ function TileGrid() {
                   setAddVisible(false);
                 }}
               >
-                <AntDesignIcons name="minuscircle" size={50} />
+                <AntDesignIcons name="minuscircle" size={50} color="white" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAdd}>
-                <AntDesignIcons name="pluscircle" size={50} />
+                <AntDesignIcons name="pluscircle" size={50} color="white" />
               </TouchableOpacity>
             </View>
           </GlassCard>
@@ -199,13 +200,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: 'white',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: 'rgba(255,255,255,0.4)',
     borderRadius: 8,
     padding: 10,
     marginBottom: 20,
+    color: 'white',
   },
   modalButtons: {
     flexDirection: 'row',

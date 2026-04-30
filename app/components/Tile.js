@@ -53,7 +53,7 @@ const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) =
   return (
     <GlassCard
       style={[styles.tile, isPlus && styles.plusTile, style]}
-      fallbackColor={isPlus ? '#1a1a1a' : 'white'}
+      fallbackColor={isPlus ? '#1a1a1a' : '#1f1f2e'}
     >
       <TouchableOpacity
         style={styles.touchable}
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 20,
     fontWeight: '600',
-    color: 'black',
+    color: 'white',
     textAlign: 'center',
   },
 });
