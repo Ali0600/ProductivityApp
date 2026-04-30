@@ -150,12 +150,16 @@ function Homepage(props){
                     <Modal visible={menuVisible} animationType="slide" transparent={true}>
                       <GestureHandlerRootView style={{ flex: 1 }}>
                         <SafeAreaView style={styles.menuContainer}>
-                            <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <GlassCard
+                                style={styles.topBar}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
                                 <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
                                     <SymbolView name="xmark.circle.fill" size={40} tintColor="white" />
                                 </TouchableOpacity>
 
-                                <Text style={{ backgroundColor: 'yellow' }}>Lists</Text>
+                                <Text style={styles.drawerTitle}>Lists</Text>
 
                                 <TouchableOpacity onPress={() => setTaskListVisible(true)}>
                                     <SymbolView name="plus.circle.fill" size={40} tintColor="white" />
@@ -388,6 +392,11 @@ const styles = StyleSheet.create({
     },
     menuLists: {
         flex: 1,
+    },
+    drawerTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: 'white',
     },
     settingsTitle: {
         fontSize: 24,
