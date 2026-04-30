@@ -239,7 +239,7 @@ function Homepage(props){
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
-                        <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <GlassCard style={styles.topBar}>
                             <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
                                <EntypoIcons name='menu' size={40} color="white" />
                             </TouchableOpacity>
@@ -275,7 +275,7 @@ function Homepage(props){
                         }
                     />
 
-                    <GlassCard style={[styles.buttonWrapper, styles.bottomNav]}>
+                    <GlassCard style={styles.bottomNav}>
                         <TouchableOpacity onPress={() => cycleList(-1)}>
                             <AntDesignIcons name='left-circle' size={50} color="white" />
                         </TouchableOpacity>
@@ -340,9 +340,26 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    topBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginHorizontal: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 28,
+        overflow: 'hidden',
+    },
     bottomNav: {
+        flexDirection: 'row',
         justifyContent: 'space-around',
+        alignItems: 'center',
+        marginHorizontal: 12,
+        marginBottom: 35,
         paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 32,
+        overflow: 'hidden',
     },
     modalContent:{
         flex: 1,
