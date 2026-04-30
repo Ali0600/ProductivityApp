@@ -19,3 +19,4 @@ web-build/
 .metro-health-check*
 
 CLAUDE.md
+.claude/settings.local.json
