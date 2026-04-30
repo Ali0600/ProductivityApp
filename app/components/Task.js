@@ -1,8 +1,43 @@
 import { memo, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, Alert } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import GlassCard from './GlassCard';
+
+const RightAction = ({ progress, onPress }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const p = Math.min(progress.value, 1);
+        return {
+            opacity: p,
+            transform: [{ scale: 0.7 + 0.3 * p }],
+        };
+    });
+    return (
+        <Animated.View style={[styles.deleteBox, animatedStyle]}>
+            <TouchableOpacity style={styles.actionTouch} onPress={onPress}>
+                <SymbolView name="trash.fill" size={28} tintColor="white" />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
+
+const LeftAction = ({ progress, onPress }) => {
+    const animatedStyle = useAnimatedStyle(() => {
+        const p = Math.min(progress.value, 1);
+        return {
+            opacity: p,
+            transform: [{ scale: 0.7 + 0.3 * p }],
+        };
+    });
+    return (
+        <Animated.View style={[styles.completeBox, animatedStyle]}>
+            <TouchableOpacity style={styles.actionTouch} onPress={onPress}>
+                <SymbolView name="checkmark.circle.fill" size={28} tintColor="white" />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
     const swipeableRef = useRef(null);
@@ -95,15 +130,11 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                     handleRemove();
                 }
             }}
-            renderRightActions={() => (
-                <TouchableOpacity style={styles.deleteBox} onPress={handleRemove}>
-                    <SymbolView name="trash.fill" size={28} tintColor="white" />
-                </TouchableOpacity>
+            renderRightActions={(progress) => (
+                <RightAction progress={progress} onPress={handleRemove} />
             )}
-            renderLeftActions={() => (
-                <TouchableOpacity style={styles.completeBox} onPress={handleComplete}>
-                    <SymbolView name="checkmark.circle.fill" size={28} tintColor="white" />
-                </TouchableOpacity>
+            renderLeftActions={(progress) => (
+                <LeftAction progress={progress} onPress={handleComplete} />
             )}
         >
             <GlassCard
@@ -157,6 +188,12 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         marginVertical: 2,
         marginRight: 8,
+    },
+    actionTouch: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 })
 
