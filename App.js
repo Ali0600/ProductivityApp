@@ -1,6 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Feather from '@expo/vector-icons/Feather';
+import Entypo from '@expo/vector-icons/Entypo';
 import Homepage from './app/screens/Homepage';
 import TileGrid from './app/screens/TileGrid';
 import 'react-native-gesture-handler';
@@ -16,6 +20,12 @@ function RootScreen() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    ...AntDesign.font,
+    ...Feather.font,
+    ...Entypo.font,
+  });
+
   useEffect(() => {
     const initializeNotifications = async () => {
       try {
@@ -47,9 +57,11 @@ export default function App() {
         end={{ x: 0, y: 1 }}
       >
         <StatusBar style="light" />
-        <AppStateProvider>
-          <RootScreen />
-        </AppStateProvider>
+        {fontsLoaded && (
+          <AppStateProvider>
+            <RootScreen />
+          </AppStateProvider>
+        )}
       </LinearGradient>
     </GestureHandlerRootView>
   );
