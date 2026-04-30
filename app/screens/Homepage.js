@@ -4,9 +4,7 @@ import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
 import GlassCard from "../components/GlassCard";
-import AntDesignIcons from '@expo/vector-icons/AntDesign';
-import EntypoIcons from '@expo/vector-icons/Entypo';
-import FeatherIcons from '@expo/vector-icons/Feather'
+import { SymbolView } from 'expo-symbols';
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -140,11 +138,11 @@ function Homepage(props){
 
                         <GlassCard style={styles.buttonWrapper}>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <AntDesignIcons name='minus-circle' size={60} color="white" />
+                                <SymbolView name="minus.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={handleAddTask}>
-                                <AntDesignIcons name='plus-circle' size={60} color="white" />
+                                <SymbolView name="plus.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
                         </GlassCard>
                     </Modal>
@@ -154,13 +152,13 @@ function Homepage(props){
                         <SafeAreaView style={styles.menuContainer}>
                             <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                                 <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
-                                    <AntDesignIcons name='close-circle' size={40} color="white" />
+                                    <SymbolView name="xmark.circle.fill" size={40} tintColor="white" />
                                 </TouchableOpacity>
 
                                 <Text style={{ backgroundColor: 'yellow' }}>Lists</Text>
 
                                 <TouchableOpacity onPress={() => setTaskListVisible(true)}>
-                                    <AntDesignIcons name='plus-circle' size={40} color="white" />
+                                    <SymbolView name="plus.circle.fill" size={40} tintColor="white" />
                                 </TouchableOpacity>
                             </GlassCard>
                             
@@ -204,11 +202,11 @@ function Homepage(props){
 
                             <GlassCard style={styles.buttonWrapper}>
                                 <TouchableOpacity onPress={() => setTaskListVisible(false)}>
-                                    <AntDesignIcons name='minus-circle' size={60} color="white" />
+                                    <SymbolView name="minus.circle.fill" size={60} tintColor="white" />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity onPress={handleAddNewList}>
-                                    <AntDesignIcons name='plus-circle' size={60} color="white" />
+                                    <SymbolView name="plus.circle.fill" size={60} tintColor="white" />
                                 </TouchableOpacity>
                             </GlassCard>
                         </Modal>
@@ -229,11 +227,11 @@ function Homepage(props){
 
                         <GlassCard style={styles.buttonWrapper}>
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                                <AntDesignIcons name='close-circle' size={60} color="white" />
+                                <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                                <AntDesignIcons name='check-circle' size={60} color="white" />
+                                <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
                         </GlassCard>
                     </Modal>
@@ -245,7 +243,7 @@ function Homepage(props){
                             colorScheme="dark"
                         >
                             <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
-                               <EntypoIcons name='menu' size={40} color="white" />
+                               <SymbolView name="line.3.horizontal" size={40} tintColor="white" />
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={exitToTileGrid}>
@@ -253,7 +251,7 @@ function Homepage(props){
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
-                               <FeatherIcons name='settings' size={40} color="white"/>
+                               <SymbolView name="gearshape" size={40} tintColor="white" />
                             </TouchableOpacity>
                         </GlassCard>
                     </SafeAreaView>
@@ -285,15 +283,15 @@ function Homepage(props){
                         colorScheme="dark"
                     >
                         <TouchableOpacity onPress={() => cycleList(-1)}>
-                            <AntDesignIcons name='left-circle' size={50} color="white" />
+                            <SymbolView name="chevron.left.circle.fill" size={50} tintColor="white" />
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => setModalVisible(true)}>
-                            <AntDesignIcons name='plus-circle' size={60} color="white" />
+                            <SymbolView name="plus.circle.fill" size={60} tintColor="white" />
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => cycleList(1)}>
-                            <AntDesignIcons name='right-circle' size={50} color="white" />
+                            <SymbolView name="chevron.right.circle.fill" size={50} tintColor="white" />
                         </TouchableOpacity>
                     </GlassCard>
 

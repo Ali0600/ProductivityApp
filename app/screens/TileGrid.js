@@ -11,8 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import AntDesignIcons from '@expo/vector-icons/AntDesign';
-import FeatherIcons from '@expo/vector-icons/Feather';
+import { SymbolView } from 'expo-symbols';
 import Tile from '../components/Tile';
 import GlassCard from '../components/GlassCard';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
@@ -54,7 +53,7 @@ function TileGrid() {
         <View style={{ width: 40 }} />
         <Text style={styles.title}>ADHDone</Text>
         <TouchableOpacity onPress={() => {}}>
-          <FeatherIcons name="settings" size={32} color="white" />
+          <SymbolView name="gearshape" size={32} tintColor="white" />
         </TouchableOpacity>
       </View>
 
@@ -119,10 +118,10 @@ function TileGrid() {
                   setAddVisible(false);
                 }}
               >
-                <AntDesignIcons name="minus-circle" size={50} color="white" />
+                <SymbolView name="minus.circle.fill" size={50} tintColor="white" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAdd}>
-                <AntDesignIcons name="plus-circle" size={50} color="white" />
+                <SymbolView name="plus.circle.fill" size={50} tintColor="white" />
               </TouchableOpacity>
             </View>
           </GlassCard>

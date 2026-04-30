@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
-import AntDesignIcons from '@expo/vector-icons/AntDesign';
+import { SymbolView } from 'expo-symbols';
 import GlassCard from './GlassCard';
 
 const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) => {
@@ -63,7 +63,7 @@ const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) =
         delayLongPress={500}
       >
         {isPlus ? (
-          <AntDesignIcons name="plus" size={40} color="#888" />
+          <SymbolView name="plus" size={40} tintColor="#888" />
         ) : (
           <Text style={[styles.text, textStyle]} numberOfLines={2} adjustsFontSizeToFit>
             {name}
