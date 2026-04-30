@@ -109,7 +109,11 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
                 </TouchableOpacity>
             )}
         >
-            <GlassCard style={styles.taskCard}>
+            <GlassCard
+                style={styles.taskCard}
+                colorScheme="dark"
+                tintColor="rgba(46, 46, 80, 0.35)"
+            >
                 <TouchableOpacity
                     style={styles.taskContainer}
                     onLongPress={handleEdit}
