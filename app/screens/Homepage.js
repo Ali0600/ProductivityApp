@@ -140,11 +140,11 @@ function Homepage(props){
 
                         <GlassCard style={styles.buttonWrapper}>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <AntDesignIcons name='minuscircle' size={60} color="white" />
+                                <AntDesignIcons name='minus-circle' size={60} color="white" />
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={handleAddTask}>
-                                <AntDesignIcons name='pluscircle' size={60} color="white" />
+                                <AntDesignIcons name='plus-circle' size={60} color="white" />
                             </TouchableOpacity>
                         </GlassCard>
                     </Modal>
@@ -154,13 +154,13 @@ function Homepage(props){
                         <SafeAreaView style={styles.menuContainer}>
                             <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                                 <TouchableOpacity onPress={() => setMenuPanalVisible(false)}>
-                                    <AntDesignIcons name='closecircle' size={40} color="white" />
+                                    <AntDesignIcons name='close-circle' size={40} color="white" />
                                 </TouchableOpacity>
 
                                 <Text style={{ backgroundColor: 'yellow' }}>Lists</Text>
 
                                 <TouchableOpacity onPress={() => setTaskListVisible(true)}>
-                                    <AntDesignIcons name='pluscircle' size={40} color="white" />
+                                    <AntDesignIcons name='plus-circle' size={40} color="white" />
                                 </TouchableOpacity>
                             </GlassCard>
                             
@@ -204,11 +204,11 @@ function Homepage(props){
 
                             <GlassCard style={styles.buttonWrapper}>
                                 <TouchableOpacity onPress={() => setTaskListVisible(false)}>
-                                    <AntDesignIcons name='minuscircle' size={60} color="white" />
+                                    <AntDesignIcons name='minus-circle' size={60} color="white" />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity onPress={handleAddNewList}>
-                                    <AntDesignIcons name='pluscircle' size={60} color="white" />
+                                    <AntDesignIcons name='plus-circle' size={60} color="white" />
                                 </TouchableOpacity>
                             </GlassCard>
                         </Modal>
@@ -229,11 +229,11 @@ function Homepage(props){
 
                         <GlassCard style={styles.buttonWrapper}>
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                                <AntDesignIcons name='closecircle' size={60} color="white" />
+                                <AntDesignIcons name='close-circle' size={60} color="white" />
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                                <AntDesignIcons name='checkcircle' size={60} color="white" />
+                                <AntDesignIcons name='check-circle' size={60} color="white" />
                             </TouchableOpacity>
                         </GlassCard>
                     </Modal>
@@ -277,15 +277,15 @@ function Homepage(props){
 
                     <GlassCard style={[styles.buttonWrapper, styles.bottomNav]}>
                         <TouchableOpacity onPress={() => cycleList(-1)}>
-                            <AntDesignIcons name='leftcircle' size={50} color="white" />
+                            <AntDesignIcons name='left-circle' size={50} color="white" />
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => setModalVisible(true)}>
-                            <AntDesignIcons name='pluscircle' size={60} color="white" />
+                            <AntDesignIcons name='plus-circle' size={60} color="white" />
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => cycleList(1)}>
-                            <AntDesignIcons name='rightcircle' size={50} color="white" />
+                            <AntDesignIcons name='right-circle' size={50} color="white" />
                         </TouchableOpacity>
                     </GlassCard>
 

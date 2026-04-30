@@ -119,10 +119,10 @@ function TileGrid() {
                   setAddVisible(false);
                 }}
               >
-                <AntDesignIcons name="minuscircle" size={50} color="white" />
+                <AntDesignIcons name="minus-circle" size={50} color="white" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAdd}>
-                <AntDesignIcons name="pluscircle" size={50} color="white" />
+                <AntDesignIcons name="plus-circle" size={50} color="white" />
               </TouchableOpacity>
             </View>
           </GlassCard>
