@@ -259,7 +259,9 @@ function Homepage(props){
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={exitToTileGrid}>
-                                <Text style={styles.textFont}>ADHD Habits</Text>
+                                <Text style={styles.textFont} numberOfLines={1}>
+                                    {currentList || currentMainList}
+                                </Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
