@@ -53,6 +53,8 @@ const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) =
   return (
     <GlassCard
       style={[styles.tile, isPlus && styles.plusTile, style]}
+      colorScheme="dark"
+      tintColor={isPlus ? undefined : 'rgba(46, 46, 80, 0.45)'}
       fallbackColor={isPlus ? '#1a1a1a' : '#1f1f2e'}
     >
       <TouchableOpacity
