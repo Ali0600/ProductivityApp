@@ -73,7 +73,8 @@ const IntervalSlider = ({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.valueLabel}>Every {formatMinutes(displayValue)}</Text>
+            <Text style={styles.valuePrefix}>Every</Text>
+            <Text style={styles.valueLabel}>{formatMinutes(displayValue)}</Text>
             <GestureDetector gesture={composed}>
                 <View style={styles.touchArea}>
                     <View style={styles.track} />
@@ -94,10 +95,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
     },
+    valuePrefix: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 13,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
+        marginBottom: 4,
+    },
     valueLabel: {
         color: 'white',
-        fontSize: 20,
-        fontWeight: '600',
+        fontSize: 28,
+        fontWeight: '700',
         marginBottom: 16,
     },
     touchArea: {
