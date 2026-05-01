@@ -21,6 +21,14 @@ export const formatMinutes = (mins) => {
     return `${h}h ${m}min`;
 };
 
+export const formatTimeOfDay = (totalMinutes) => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const period = h < 12 ? 'AM' : 'PM';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+};
+
 const closestIndex = (target, values) => {
     let bestIdx = 0;
     let bestDiff = Math.abs(values[0] - target);
@@ -34,7 +42,13 @@ const closestIndex = (target, values) => {
     return bestIdx;
 };
 
-const IntervalSlider = ({ value, onChangeComplete, values = DEFAULT_VALUES }) => {
+const IntervalSlider = ({
+    value,
+    onChangeComplete,
+    values = DEFAULT_VALUES,
+    formatter = formatMinutes,
+    showPrefix = true,
+}) => {
     const stepCount = values.length - 1;
     const stepPx = TRACK_WIDTH / stepCount;
     const initialIndex = closestIndex(value, values);
@@ -80,8 +94,8 @@ const IntervalSlider = ({ value, onChangeComplete, values = DEFAULT_VALUES }) =>
 
     return (
         <View style={styles.container}>
-            <Text style={styles.valuePrefix}>Every</Text>
-            <Text style={styles.valueLabel}>{formatMinutes(displayValue)}</Text>
+            {showPrefix ? <Text style={styles.valuePrefix}>Every</Text> : null}
+            <Text style={styles.valueLabel}>{formatter(displayValue)}</Text>
             <GestureDetector gesture={composed}>
                 <View style={styles.touchArea}>
                     <View style={styles.track} />
@@ -90,8 +104,8 @@ const IntervalSlider = ({ value, onChangeComplete, values = DEFAULT_VALUES }) =>
                 </View>
             </GestureDetector>
             <View style={styles.bounds}>
-                <Text style={styles.boundLabel}>{formatMinutes(values[0])}</Text>
-                <Text style={styles.boundLabel}>{formatMinutes(values[values.length - 1])}</Text>
+                <Text style={styles.boundLabel}>{formatter(values[0])}</Text>
+                <Text style={styles.boundLabel}>{formatter(values[values.length - 1])}</Text>
             </View>
         </View>
     );

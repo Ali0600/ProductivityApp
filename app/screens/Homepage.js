@@ -12,7 +12,9 @@ import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
 import GlassCard from "../components/GlassCard";
-import IntervalSlider, { formatMinutes } from "../components/IntervalSlider";
+import IntervalSlider, { formatMinutes, formatTimeOfDay } from "../components/IntervalSlider";
+
+const TIME_OF_DAY_VALUES = Array.from({ length: 48 }, (_, i) => i * 30);
 import { SymbolView } from 'expo-symbols';
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -34,9 +36,18 @@ function Homepage(props){
     const [scheduledModalVisible, setScheduledModalVisible] = useState(false);
     const [scheduledList, setScheduledList] = useState([]);
     const [intervalModalVisible, setIntervalModalVisible] = useState(false);
+    const [quietHoursModalVisible, setQuietHoursModalVisible] = useState(false);
+    const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
+    const [quietHoursStart, setQuietHoursStart] = useState(0);
+    const [quietHoursEnd, setQuietHoursEnd] = useState(480);
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
+        NotificationService.getQuietHours().then(({ enabled, startMinutes, endMinutes }) => {
+            setQuietHoursEnabled(enabled);
+            setQuietHoursStart(startMinutes);
+            setQuietHoursEnd(endMinutes);
+        });
     }, []);
 
     const handleToggleNotifications = useCallback(async (next) => {
@@ -177,6 +188,57 @@ function Homepage(props){
             intervalMinutes: minutes,
         });
     }, [currentMainList, currentMessages, setNotificationInterval]);
+
+    const persistQuietHours = useCallback(async (next) => {
+        await NotificationService.setQuietHours(next);
+        await NotificationService.scheduleRecurringNotifications({
+            sourceName: currentMainList || undefined,
+            messages: currentMessages.length ? currentMessages : undefined,
+            intervalMinutes: currentInterval,
+        });
+    }, [currentMainList, currentMessages, currentInterval]);
+
+    const handleOpenQuietHours = useCallback(() => {
+        tapLight();
+        setQuietHoursModalVisible(true);
+        setSettingsVisible(false);
+    }, []);
+
+    const handleCloseQuietHours = useCallback(() => {
+        tapLight();
+        setQuietHoursModalVisible(false);
+        setSettingsVisible(true);
+    }, []);
+
+    const handleQuietToggle = useCallback(async (next) => {
+        setQuietHoursEnabled(next);
+        selection();
+        await persistQuietHours({
+            enabled: next,
+            startMinutes: quietHoursStart,
+            endMinutes: quietHoursEnd,
+        });
+    }, [quietHoursStart, quietHoursEnd, persistQuietHours]);
+
+    const handleQuietStartChange = useCallback(async (mins) => {
+        setQuietHoursStart(mins);
+        selection();
+        await persistQuietHours({
+            enabled: quietHoursEnabled,
+            startMinutes: mins,
+            endMinutes: quietHoursEnd,
+        });
+    }, [quietHoursEnabled, quietHoursEnd, persistQuietHours]);
+
+    const handleQuietEndChange = useCallback(async (mins) => {
+        setQuietHoursEnd(mins);
+        selection();
+        await persistQuietHours({
+            enabled: quietHoursEnabled,
+            startMinutes: quietHoursStart,
+            endMinutes: mins,
+        });
+    }, [quietHoursEnabled, quietHoursStart, persistQuietHours]);
 
     const handleAddMessage = useCallback(async () => {
         const trimmed = newMessageText.trim();
@@ -372,6 +434,18 @@ function Homepage(props){
                                 </TouchableOpacity>
                             ) : null}
 
+                            <TouchableOpacity onPress={handleOpenQuietHours} style={styles.settingsRow}>
+                                <Text style={styles.settingsRowLabel}>Quiet Hours</Text>
+                                <View style={styles.settingsRowValue}>
+                                    <Text style={styles.settingsValueText}>
+                                        {quietHoursEnabled
+                                            ? `${formatTimeOfDay(quietHoursStart)} – ${formatTimeOfDay(quietHoursEnd)}`
+                                            : 'Off'}
+                                    </Text>
+                                    <SymbolView name="chevron.right" size={20} tintColor="white" />
+                                </View>
+                            </TouchableOpacity>
+
                             <TouchableOpacity onPress={handleOpenScheduled} style={styles.settingsRow}>
                                 <Text style={styles.settingsRowLabel}>View Scheduled</Text>
                                 <SymbolView name="chevron.right" size={20} tintColor="white" />
@@ -529,6 +603,59 @@ function Homepage(props){
                                 tintColor="rgba(46, 46, 80, 0.45)"
                             >
                                 <TouchableOpacity onPress={handleCloseInterval}>
+                                    <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                </TouchableOpacity>
+                            </GlassCard>
+                        </SafeAreaView>
+                    </Modal>
+
+                    <Modal visible={quietHoursModalVisible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <GlassCard
+                                style={styles.modalContent}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <Text style={styles.settingsTitle}>Quiet Hours</Text>
+                                <Text style={styles.messagesSubtitle}>
+                                    No notifications fire during this window.
+                                </Text>
+
+                                <View style={styles.settingsRow}>
+                                    <Text style={styles.settingsRowLabel}>Enabled</Text>
+                                    <Switch value={quietHoursEnabled} onValueChange={handleQuietToggle} />
+                                </View>
+
+                                {quietHoursEnabled ? (
+                                    <>
+                                        <Text style={styles.quietHeading}>Start</Text>
+                                        <IntervalSlider
+                                            key={`start-${quietHoursStart}`}
+                                            value={quietHoursStart}
+                                            onChangeComplete={handleQuietStartChange}
+                                            values={TIME_OF_DAY_VALUES}
+                                            formatter={formatTimeOfDay}
+                                            showPrefix={false}
+                                        />
+                                        <Text style={styles.quietHeading}>End</Text>
+                                        <IntervalSlider
+                                            key={`end-${quietHoursEnd}`}
+                                            value={quietHoursEnd}
+                                            onChangeComplete={handleQuietEndChange}
+                                            values={TIME_OF_DAY_VALUES}
+                                            formatter={formatTimeOfDay}
+                                            showPrefix={false}
+                                        />
+                                    </>
+                                ) : null}
+                            </GlassCard>
+
+                            <GlassCard
+                                style={styles.buttonWrapper}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <TouchableOpacity onPress={handleCloseQuietHours}>
                                     <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
                                 </TouchableOpacity>
                             </GlassCard>
@@ -729,6 +856,15 @@ const styles = StyleSheet.create({
     settingsValueText: {
         fontSize: 16,
         color: 'rgba(255,255,255,0.7)',
+    },
+    quietHeading: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
+        marginTop: 16,
+        marginBottom: 4,
+        textAlign: 'center',
     },
     messagesSubtitle: {
         color: 'rgba(255,255,255,0.7)',

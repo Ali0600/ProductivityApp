@@ -13,11 +13,23 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const isInQuietHours = (date, startMin, endMin) => {
+  if (startMin === endMin) return false;
+  const minOfDay = date.getHours() * 60 + date.getMinutes();
+  if (startMin < endMin) {
+    return minOfDay >= startMin && minOfDay < endMin;
+  }
+  return minOfDay >= startMin || minOfDay < endMin;
+};
+
 export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
   static NOTIFICATIONS_ENABLED_KEY = 'notificationsEnabled';
   static NOTIFICATION_SOURCE_KEY = 'notificationSourceMainList';
+  static QUIET_HOURS_ENABLED_KEY = 'quietHoursEnabled';
+  static QUIET_HOURS_START_KEY = 'quietHoursStartMinutes';
+  static QUIET_HOURS_END_KEY = 'quietHoursEndMinutes';
   static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
 
   static async setNotificationSource(mainListName) {
@@ -26,6 +38,27 @@ export default class NotificationService {
     } else {
       await AsyncStorage.removeItem(this.NOTIFICATION_SOURCE_KEY);
     }
+  }
+
+  static async getQuietHours() {
+    const [enabledRaw, startRaw, endRaw] = await Promise.all([
+      AsyncStorage.getItem(this.QUIET_HOURS_ENABLED_KEY),
+      AsyncStorage.getItem(this.QUIET_HOURS_START_KEY),
+      AsyncStorage.getItem(this.QUIET_HOURS_END_KEY),
+    ]);
+    return {
+      enabled: enabledRaw === 'true',
+      startMinutes: startRaw != null ? parseInt(startRaw, 10) : 0,
+      endMinutes: endRaw != null ? parseInt(endRaw, 10) : 480,
+    };
+  }
+
+  static async setQuietHours({ enabled, startMinutes, endMinutes }) {
+    await AsyncStorage.multiSet([
+      [this.QUIET_HOURS_ENABLED_KEY, enabled ? 'true' : 'false'],
+      [this.QUIET_HOURS_START_KEY, String(startMinutes)],
+      [this.QUIET_HOURS_END_KEY, String(endMinutes)],
+    ]);
   }
 
   static async getNotificationsEnabled() {
@@ -474,14 +507,23 @@ export default class NotificationService {
         return [];
       }
 
+      const quiet = await this.getQuietHours();
       const intervalMs = intervalMinutes * 60 * 1000;
       const notificationIds = [];
-      const startTime = Date.now() + intervalMs;
+      const MAX_CANDIDATES = 200;
+      const baseTime = Date.now();
 
-      for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
-        const triggerDate = new Date(startTime + ((i - 1) * intervalMs));
-        const body = messages[(i - 1) % messages.length];
+      let scheduled = 0;
+      let candidate = 0;
+      while (scheduled < this.MAX_SCHEDULED_NOTIFICATIONS && candidate < MAX_CANDIDATES) {
+        candidate += 1;
+        const triggerDate = new Date(baseTime + candidate * intervalMs);
 
+        if (quiet.enabled && isInQuietHours(triggerDate, quiet.startMinutes, quiet.endMinutes)) {
+          continue;
+        }
+
+        const body = messages[scheduled % messages.length];
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Productivity Reminder',
@@ -489,7 +531,7 @@ export default class NotificationService {
             sound: true,
             data: {
               type: 'recurring_reminder',
-              sequence: i,
+              sequence: scheduled + 1,
               scheduledFor: triggerDate.getTime(),
               sourceMainList: sourceName,
             },
@@ -501,6 +543,7 @@ export default class NotificationService {
         });
 
         notificationIds.push(notificationId);
+        scheduled += 1;
       }
 
       await AsyncStorage.setItem(
@@ -508,7 +551,8 @@ export default class NotificationService {
         JSON.stringify(notificationIds)
       );
 
-      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling, every ${intervalMinutes}min).`);
+      const quietLabel = quiet.enabled ? `${quiet.startMinutes}–${quiet.endMinutes}` : 'off';
+      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling, every ${intervalMinutes}min, quiet=${quietLabel}).`);
       return notificationIds;
     } catch (error) {
       console.error('Error scheduling recurring notifications:', error);
