@@ -31,6 +31,8 @@ function Homepage(props){
     const [messagesModalVisible, setMessagesModalVisible] = useState(false);
     const [draftMessages, setDraftMessages] = useState([]);
     const [newMessageText, setNewMessageText] = useState('');
+    const [scheduledModalVisible, setScheduledModalVisible] = useState(false);
+    const [scheduledList, setScheduledList] = useState([]);
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -153,6 +155,20 @@ function Homepage(props){
         warning();
         setDraftMessages((prev) => prev.filter((_, i) => i !== idx));
     };
+
+    const handleOpenScheduled = useCallback(async () => {
+        tapLight();
+        const list = await NotificationService.getUpcomingNotifications();
+        setScheduledList(list);
+        setScheduledModalVisible(true);
+        setSettingsVisible(false);
+    }, []);
+
+    const handleRefreshScheduled = useCallback(async () => {
+        tapLight();
+        const list = await NotificationService.getUpcomingNotifications();
+        setScheduledList(list);
+    }, []);
 
     const pulse = useSharedValue(0);
     useEffect(() => {
@@ -310,6 +326,11 @@ function Homepage(props){
                                     <SymbolView name="chevron.right" size={20} tintColor="white" />
                                 </TouchableOpacity>
                             ) : null}
+
+                            <TouchableOpacity onPress={handleOpenScheduled} style={styles.settingsRow}>
+                                <Text style={styles.settingsRowLabel}>View Scheduled</Text>
+                                <SymbolView name="chevron.right" size={20} tintColor="white" />
+                            </TouchableOpacity>
                         </GlassCard>
 
                         <GlassCard style={styles.buttonWrapper}>
@@ -387,6 +408,59 @@ function Homepage(props){
                                     </TouchableOpacity>
                                 </GlassCard>
                             </KeyboardAvoidingView>
+                        </SafeAreaView>
+                    </Modal>
+
+                    <Modal visible={scheduledModalVisible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <GlassCard
+                                style={styles.modalContent}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <View style={styles.scheduledHeader}>
+                                    <Text style={styles.settingsTitle}>Scheduled Notifications</Text>
+                                    <TouchableOpacity onPress={handleRefreshScheduled} style={styles.refreshButton}>
+                                        <SymbolView name="arrow.clockwise.circle.fill" size={28} tintColor="white" />
+                                    </TouchableOpacity>
+                                </View>
+                                <Text style={styles.messagesSubtitle}>
+                                    {scheduledList.length} pending — soonest first.
+                                </Text>
+
+                                <FlatList
+                                    data={scheduledList}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item }) => (
+                                        <View style={styles.scheduledRow}>
+                                            <Text style={styles.scheduledTime}>
+                                                {moment(item.fireTime).fromNow()}
+                                            </Text>
+                                            <Text style={styles.scheduledAbsolute}>
+                                                {moment(item.fireTime).format('ddd h:mm A')}
+                                            </Text>
+                                            <Text style={styles.scheduledBody} numberOfLines={2}>
+                                                {item.body}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    ListEmptyComponent={
+                                        <Text style={styles.messagesEmpty}>
+                                            No notifications scheduled.
+                                        </Text>
+                                    }
+                                />
+                            </GlassCard>
+
+                            <GlassCard
+                                style={styles.buttonWrapper}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <TouchableOpacity onPress={() => setScheduledModalVisible(false)}>
+                                    <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
+                                </TouchableOpacity>
+                            </GlassCard>
                         </SafeAreaView>
                     </Modal>
 
@@ -618,6 +692,37 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 8,
+    },
+    scheduledHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
+    refreshButton: {
+        position: 'absolute',
+        right: 16,
+    },
+    scheduledRow: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(255,255,255,0.15)',
+    },
+    scheduledTime: {
+        color: '#a5b4fc',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    scheduledAbsolute: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 11,
+        marginTop: 2,
+    },
+    scheduledBody: {
+        color: 'white',
+        fontSize: 15,
+        marginTop: 4,
     },
   })
 

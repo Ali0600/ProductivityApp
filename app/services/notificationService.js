@@ -409,6 +409,34 @@ export default class NotificationService {
     }
   }
 
+  static async getUpcomingNotifications() {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const formatted = scheduled.map((n) => {
+        const data = n.content?.data ?? {};
+        const trigger = n.trigger ?? {};
+        const fireMs =
+          data.scheduledFor ??
+          trigger.value ??
+          (trigger.date ? new Date(trigger.date).getTime() : null);
+        return {
+          id: n.identifier,
+          title: n.content?.title ?? '',
+          body: n.content?.body ?? '',
+          fireTime: fireMs ? new Date(fireMs) : null,
+          sequence: data.sequence ?? null,
+          type: data.type ?? 'unknown',
+        };
+      });
+      return formatted
+        .filter((n) => n.fireTime != null)
+        .sort((a, b) => a.fireTime.getTime() - b.fireTime.getTime());
+    } catch (error) {
+      console.error('Error fetching upcoming notifications:', error);
+      return [];
+    }
+  }
+
   /**
    * Schedule multiple recurring notifications (every minute for 60 minutes)
    * @returns {Promise<string[]>} - Array of notification IDs
