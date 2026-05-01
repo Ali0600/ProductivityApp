@@ -18,7 +18,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
-import { tapLight, selection } from '../services/haptics';
+import { tapLight, selection, success, warning } from '../services/haptics';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -28,6 +28,9 @@ function Homepage(props){
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
+    const [messagesModalVisible, setMessagesModalVisible] = useState(false);
+    const [draftMessages, setDraftMessages] = useState([]);
+    const [newMessageText, setNewMessageText] = useState('');
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -41,7 +44,7 @@ function Homepage(props){
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists, moveSideList } = useLists();
-    const { mainLists, currentMainList, exitToTileGrid } = useMainLists();
+    const { mainLists, currentMainList, exitToTileGrid, setNotificationMessages } = useMainLists();
     const {
         addTaskToList,
         reorderTasksInList,
@@ -115,6 +118,41 @@ function Homepage(props){
             }
         );
     }, [mainLists, currentMainList, moveSideList]);
+
+    const handleOpenMessages = useCallback(() => {
+        const current = mainLists.find((ml) => ml.name === currentMainList);
+        setDraftMessages(current?.notificationMessages ?? []);
+        setNewMessageText('');
+        setMessagesModalVisible(true);
+        setSettingsVisible(false);
+        tapLight();
+    }, [mainLists, currentMainList]);
+
+    const handleSaveMessages = useCallback(async () => {
+        setNotificationMessages(currentMainList, draftMessages);
+        await NotificationService.setNotificationSource(currentMainList);
+        await NotificationService.scheduleRecurringNotifications();
+        success();
+        setMessagesModalVisible(false);
+    }, [currentMainList, draftMessages, setNotificationMessages]);
+
+    const handleCancelMessages = useCallback(() => {
+        tapLight();
+        setMessagesModalVisible(false);
+    }, []);
+
+    const handleAddMessage = () => {
+        const trimmed = newMessageText.trim();
+        if (!trimmed) return;
+        tapLight();
+        setDraftMessages((prev) => [...prev, trimmed]);
+        setNewMessageText('');
+    };
+
+    const handleDeleteMessage = (idx) => {
+        warning();
+        setDraftMessages((prev) => prev.filter((_, i) => i !== idx));
+    };
 
     const pulse = useSharedValue(0);
     useEffect(() => {
@@ -265,6 +303,13 @@ function Homepage(props){
                                     onValueChange={handleToggleNotifications}
                                 />
                             </View>
+
+                            {currentMainList ? (
+                                <TouchableOpacity onPress={handleOpenMessages} style={styles.settingsRow}>
+                                    <Text style={styles.settingsRowLabel}>Manage Messages</Text>
+                                    <SymbolView name="chevron.right" size={20} tintColor="white" />
+                                </TouchableOpacity>
+                            ) : null}
                         </GlassCard>
 
                         <GlassCard style={styles.buttonWrapper}>
@@ -276,6 +321,73 @@ function Homepage(props){
                                 <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
                         </GlassCard>
+                    </Modal>
+
+                    <Modal visible={messagesModalVisible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+                                <GlassCard
+                                    style={styles.modalContent}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <Text style={styles.settingsTitle}>
+                                        Messages for "{currentMainList}"
+                                    </Text>
+                                    <Text style={styles.messagesSubtitle}>
+                                        Reminders cycle through these in order.
+                                    </Text>
+
+                                    <FlatList
+                                        data={draftMessages}
+                                        keyExtractor={(_, i) => `msg-${i}`}
+                                        renderItem={({ item, index }) => (
+                                            <View style={styles.messageRow}>
+                                                <Text style={styles.messageText} numberOfLines={2}>
+                                                    {item}
+                                                </Text>
+                                                <TouchableOpacity onPress={() => handleDeleteMessage(index)}>
+                                                    <SymbolView name="trash.fill" size={22} tintColor="rgba(255,180,180,0.9)" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        )}
+                                        ListEmptyComponent={
+                                            <Text style={styles.messagesEmpty}>
+                                                No messages yet. Add one below to start receiving reminders.
+                                            </Text>
+                                        }
+                                    />
+
+                                    <View style={styles.messageInputRow}>
+                                        <TextInput
+                                            value={newMessageText}
+                                            onChangeText={setNewMessageText}
+                                            placeholder="New reminder…"
+                                            placeholderTextColor="rgba(255,255,255,0.5)"
+                                            style={styles.messageInput}
+                                            onSubmitEditing={handleAddMessage}
+                                            returnKeyType="done"
+                                        />
+                                        <TouchableOpacity onPress={handleAddMessage}>
+                                            <SymbolView name="plus.circle.fill" size={32} tintColor="white" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </GlassCard>
+
+                                <GlassCard
+                                    style={styles.buttonWrapper}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <TouchableOpacity onPress={handleCancelMessages}>
+                                        <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleSaveMessages}>
+                                        <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                    </TouchableOpacity>
+                                </GlassCard>
+                            </KeyboardAvoidingView>
+                        </SafeAreaView>
                     </Modal>
 
                     <SafeAreaView style={styles.productName}>
@@ -463,7 +575,50 @@ const styles = StyleSheet.create({
     settingsRowLabel: {
         fontSize: 18,
         color: 'white',
-    }
+    },
+    messagesSubtitle: {
+        color: 'rgba(255,255,255,0.7)',
+        textAlign: 'center',
+        marginBottom: 12,
+        fontSize: 13,
+    },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(255,255,255,0.15)',
+    },
+    messageText: {
+        color: 'white',
+        flex: 1,
+        marginRight: 12,
+    },
+    messagesEmpty: {
+        color: 'rgba(255,255,255,0.6)',
+        textAlign: 'center',
+        paddingVertical: 24,
+        fontStyle: 'italic',
+    },
+    messageInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 12,
+        marginHorizontal: 16,
+        marginBottom: 16,
+        gap: 10,
+    },
+    messageInput: {
+        flex: 1,
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
   })
 
 export default Homepage;

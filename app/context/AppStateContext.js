@@ -259,9 +259,18 @@ export const AppStateProvider = ({ children }) => {
         {
           name,
           sideLists: [{ listName: 'Tasks', tasks: [], lastCompletedAt: null }],
+          notificationMessages: [],
         },
       ];
     });
+  }, []);
+
+  const setNotificationMessages = useCallback((mainListName, messages) => {
+    setMainLists((prev) =>
+      prev.map((ml) =>
+        ml.name === mainListName ? { ...ml, notificationMessages: messages } : ml
+      )
+    );
   }, []);
 
   const removeMainList = useCallback(
@@ -325,6 +334,7 @@ export const AppStateProvider = ({ children }) => {
       renameMainList,
       switchMainList,
       exitToTileGrid,
+      setNotificationMessages,
       lists,
       currentList,
       currentListData,
@@ -352,6 +362,7 @@ export const AppStateProvider = ({ children }) => {
       renameMainList,
       switchMainList,
       exitToTileGrid,
+      setNotificationMessages,
       lists,
       currentList,
       currentListData,

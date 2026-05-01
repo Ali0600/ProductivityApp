@@ -17,7 +17,16 @@ export default class NotificationService {
   static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
   static NOTIFICATIONS_ENABLED_KEY = 'notificationsEnabled';
+  static NOTIFICATION_SOURCE_KEY = 'notificationSourceMainList';
   static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
+
+  static async setNotificationSource(mainListName) {
+    if (mainListName) {
+      await AsyncStorage.setItem(this.NOTIFICATION_SOURCE_KEY, mainListName);
+    } else {
+      await AsyncStorage.removeItem(this.NOTIFICATION_SOURCE_KEY);
+    }
+  }
 
   static async getNotificationsEnabled() {
     try {
@@ -406,27 +415,41 @@ export default class NotificationService {
    */
   static async scheduleRecurringNotifications() {
     try {
-      // Cancel any existing recurring notifications
       await this.cancelRecurringNotifications();
-      
+
+      const sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
+      if (!sourceName) {
+        console.log('No notification source main list set; skipping schedule.');
+        return [];
+      }
+
+      const stored = await AsyncStorage.getItem('mainLists');
+      const mainLists = stored ? JSON.parse(stored) : [];
+      const source = mainLists.find((ml) => ml.name === sourceName);
+      const messages = source?.notificationMessages ?? [];
+
+      if (messages.length === 0) {
+        console.log(`Source list "${sourceName}" has no messages; skipping.`);
+        return [];
+      }
+
       const notificationIds = [];
-      
-      // Schedule recurring notifications using Date objects (WORKING SOLUTION)
-      console.log('Current time:', new Date().toLocaleString());
-      const startTime = Date.now() + 3600000; // Start 1 hour from now
-      
+      const startTime = Date.now() + 3600000;
+
       for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
-        const triggerDate = new Date(startTime + ((i - 1) * 3600000)); // Each hour after start
-        
+        const triggerDate = new Date(startTime + ((i - 1) * 3600000));
+        const body = messages[(i - 1) % messages.length];
+
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Productivity Reminder',
-            body: `Be productive! This is reminder!`,
+            body,
             sound: true,
             data: {
               type: 'recurring_reminder',
               sequence: i,
               scheduledFor: triggerDate.getTime(),
+              sourceMainList: sourceName,
             },
           },
           trigger: {
@@ -434,21 +457,16 @@ export default class NotificationService {
             date: triggerDate,
           },
         });
-        
+
         notificationIds.push(notificationId);
-        
-        if (i <= 3) { // Log first 3 for debugging
-          console.log(`Scheduled notification ${i} for ${triggerDate.toLocaleString()}`);
-        }
       }
-      
-      // Save the notification IDs
+
       await AsyncStorage.setItem(
-        this.RECURRING_NOTIFICATIONS_KEY, 
+        this.RECURRING_NOTIFICATIONS_KEY,
         JSON.stringify(notificationIds)
       );
-      
-      console.log(`Scheduled ${notificationIds.length} recurring notifications starting in 1 hour`);
+
+      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling).`);
       return notificationIds;
     } catch (error) {
       console.error('Error scheduling recurring notifications:', error);
