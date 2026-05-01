@@ -1,5 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    interpolateColor,
+    Easing,
+} from 'react-native-reanimated';
 import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
@@ -107,6 +115,24 @@ function Homepage(props){
             }
         );
     }, [mainLists, currentMainList, moveSideList]);
+
+    const pulse = useSharedValue(0);
+    useEffect(() => {
+        pulse.value = withRepeat(
+            withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
+            -1,
+            true
+        );
+    }, [pulse]);
+
+    const titleAnimatedStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(pulse.value, [0, 1], ['#ffffff', '#a5b4fc']),
+        textShadowColor: interpolateColor(
+            pulse.value,
+            [0, 1],
+            ['rgba(165, 180, 252, 0)', 'rgba(165, 180, 252, 0.6)']
+        ),
+    }));
 
     const cycleList = useCallback((direction) => {
         if (!lists || lists.length <= 1) return;
@@ -263,9 +289,12 @@ function Homepage(props){
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={exitToTileGrid}>
-                                <Text style={styles.textFont} numberOfLines={1}>
+                                <Animated.Text
+                                    style={[styles.textFont, styles.titleGlow, titleAnimatedStyle]}
+                                    numberOfLines={1}
+                                >
                                     {currentList || currentMainList}
-                                </Text>
+                                </Animated.Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
@@ -354,6 +383,10 @@ const styles = StyleSheet.create({
         textAlign: "center",
         paddingTop: 4,
         color: 'white',
+    },
+    titleGlow: {
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
     },
     buttonWrapper: {
         position: "relative",
