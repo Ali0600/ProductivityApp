@@ -446,7 +446,7 @@ export default class NotificationService {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
 
-      let { sourceName, messages } = opts;
+      let { sourceName, messages, intervalMinutes } = opts;
 
       if (sourceName === undefined) {
         sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
@@ -456,11 +456,17 @@ export default class NotificationService {
         return [];
       }
 
-      if (messages === undefined) {
+      let source;
+      if (messages === undefined || intervalMinutes === undefined) {
         const stored = await AsyncStorage.getItem('mainLists');
         const mainLists = stored ? JSON.parse(stored) : [];
-        const source = mainLists.find((ml) => ml.name === sourceName);
+        source = mainLists.find((ml) => ml.name === sourceName);
+      }
+      if (messages === undefined) {
         messages = source?.notificationMessages ?? [];
+      }
+      if (intervalMinutes === undefined) {
+        intervalMinutes = source?.notificationIntervalMinutes ?? 60;
       }
 
       if (messages.length === 0) {
@@ -468,11 +474,12 @@ export default class NotificationService {
         return [];
       }
 
+      const intervalMs = intervalMinutes * 60 * 1000;
       const notificationIds = [];
-      const startTime = Date.now() + 3600000;
+      const startTime = Date.now() + intervalMs;
 
       for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
-        const triggerDate = new Date(startTime + ((i - 1) * 3600000));
+        const triggerDate = new Date(startTime + ((i - 1) * intervalMs));
         const body = messages[(i - 1) % messages.length];
 
         const notificationId = await Notifications.scheduleNotificationAsync({
@@ -501,7 +508,7 @@ export default class NotificationService {
         JSON.stringify(notificationIds)
       );
 
-      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling).`);
+      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling, every ${intervalMinutes}min).`);
       return notificationIds;
     } catch (error) {
       console.error('Error scheduling recurring notifications:', error);

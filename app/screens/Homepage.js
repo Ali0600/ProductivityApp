@@ -12,6 +12,7 @@ import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
 import GlassCard from "../components/GlassCard";
+import IntervalSlider, { formatMinutes } from "../components/IntervalSlider";
 import { SymbolView } from 'expo-symbols';
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -32,6 +33,7 @@ function Homepage(props){
     const [newMessageText, setNewMessageText] = useState('');
     const [scheduledModalVisible, setScheduledModalVisible] = useState(false);
     const [scheduledList, setScheduledList] = useState([]);
+    const [intervalModalVisible, setIntervalModalVisible] = useState(false);
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -45,7 +47,7 @@ function Homepage(props){
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists, moveSideList } = useLists();
-    const { mainLists, currentMainList, exitToTileGrid, setNotificationMessages } = useMainLists();
+    const { mainLists, currentMainList, exitToTileGrid, setNotificationMessages, setNotificationInterval } = useMainLists();
     const {
         addTaskToList,
         reorderTasksInList,
@@ -125,6 +127,11 @@ function Homepage(props){
         return ml?.notificationMessages ?? [];
     }, [mainLists, currentMainList]);
 
+    const currentInterval = useMemo(() => {
+        const ml = mainLists.find((m) => m.name === currentMainList);
+        return ml?.notificationIntervalMinutes ?? 60;
+    }, [mainLists, currentMainList]);
+
     const handleOpenMessages = useCallback(() => {
         setNewMessageText('');
         setMessagesModalVisible(true);
@@ -144,8 +151,32 @@ function Homepage(props){
         await NotificationService.scheduleRecurringNotifications({
             sourceName: currentMainList,
             messages: next,
+            intervalMinutes: currentInterval,
         });
-    }, [currentMainList, setNotificationMessages]);
+    }, [currentMainList, currentInterval, setNotificationMessages]);
+
+    const handleOpenInterval = useCallback(() => {
+        tapLight();
+        setIntervalModalVisible(true);
+        setSettingsVisible(false);
+    }, []);
+
+    const handleCloseInterval = useCallback(() => {
+        tapLight();
+        setIntervalModalVisible(false);
+        setSettingsVisible(true);
+    }, []);
+
+    const handleIntervalChange = useCallback(async (minutes) => {
+        setNotificationInterval(currentMainList, minutes);
+        selection();
+        await NotificationService.setNotificationSource(currentMainList);
+        await NotificationService.scheduleRecurringNotifications({
+            sourceName: currentMainList,
+            messages: currentMessages,
+            intervalMinutes: minutes,
+        });
+    }, [currentMainList, currentMessages, setNotificationInterval]);
 
     const handleAddMessage = useCallback(async () => {
         const trimmed = newMessageText.trim();
@@ -331,6 +362,16 @@ function Homepage(props){
                                 </TouchableOpacity>
                             ) : null}
 
+                            {currentMainList ? (
+                                <TouchableOpacity onPress={handleOpenInterval} style={styles.settingsRow}>
+                                    <Text style={styles.settingsRowLabel}>Reminder Interval</Text>
+                                    <View style={styles.settingsRowValue}>
+                                        <Text style={styles.settingsValueText}>{formatMinutes(currentInterval)}</Text>
+                                        <SymbolView name="chevron.right" size={20} tintColor="white" />
+                                    </View>
+                                </TouchableOpacity>
+                            ) : null}
+
                             <TouchableOpacity onPress={handleOpenScheduled} style={styles.settingsRow}>
                                 <Text style={styles.settingsRowLabel}>View Scheduled</Text>
                                 <SymbolView name="chevron.right" size={20} tintColor="white" />
@@ -460,6 +501,35 @@ function Homepage(props){
                             >
                                 <TouchableOpacity onPress={() => setScheduledModalVisible(false)}>
                                     <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
+                                </TouchableOpacity>
+                            </GlassCard>
+                        </SafeAreaView>
+                    </Modal>
+
+                    <Modal visible={intervalModalVisible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <GlassCard
+                                style={styles.modalContent}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <Text style={styles.settingsTitle}>Reminder Interval</Text>
+                                <Text style={styles.messagesSubtitle}>
+                                    How often "{currentMainList}" sends reminders.
+                                </Text>
+                                <IntervalSlider
+                                    value={currentInterval}
+                                    onChangeComplete={handleIntervalChange}
+                                />
+                            </GlassCard>
+
+                            <GlassCard
+                                style={styles.buttonWrapper}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <TouchableOpacity onPress={handleCloseInterval}>
+                                    <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
                                 </TouchableOpacity>
                             </GlassCard>
                         </SafeAreaView>
@@ -650,6 +720,15 @@ const styles = StyleSheet.create({
     settingsRowLabel: {
         fontSize: 18,
         color: 'white',
+    },
+    settingsRowValue: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    settingsValueText: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.7)',
     },
     messagesSubtitle: {
         color: 'rgba(255,255,255,0.7)',

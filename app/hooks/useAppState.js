@@ -100,6 +100,7 @@ export const useMainLists = () => {
     switchMainList,
     exitToTileGrid,
     setNotificationMessages,
+    setNotificationInterval,
   } = useAppState();
 
   return {
@@ -112,6 +113,7 @@ export const useMainLists = () => {
     switchMainList,
     exitToTileGrid,
     setNotificationMessages,
+    setNotificationInterval,
   };
 };
 

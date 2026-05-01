@@ -260,6 +260,7 @@ export const AppStateProvider = ({ children }) => {
           name,
           sideLists: [{ listName: 'Tasks', tasks: [], lastCompletedAt: null }],
           notificationMessages: [],
+          notificationIntervalMinutes: 60,
         },
       ];
     });
@@ -269,6 +270,14 @@ export const AppStateProvider = ({ children }) => {
     setMainLists((prev) =>
       prev.map((ml) =>
         ml.name === mainListName ? { ...ml, notificationMessages: messages } : ml
+      )
+    );
+  }, []);
+
+  const setNotificationInterval = useCallback((mainListName, minutes) => {
+    setMainLists((prev) =>
+      prev.map((ml) =>
+        ml.name === mainListName ? { ...ml, notificationIntervalMinutes: minutes } : ml
       )
     );
   }, []);
@@ -335,6 +344,7 @@ export const AppStateProvider = ({ children }) => {
       switchMainList,
       exitToTileGrid,
       setNotificationMessages,
+      setNotificationInterval,
       lists,
       currentList,
       currentListData,
@@ -363,6 +373,7 @@ export const AppStateProvider = ({ children }) => {
       switchMainList,
       exitToTileGrid,
       setNotificationMessages,
+      setNotificationInterval,
       lists,
       currentList,
       currentListData,
