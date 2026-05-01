@@ -441,20 +441,27 @@ export default class NotificationService {
    * Schedule multiple recurring notifications (every minute for 60 minutes)
    * @returns {Promise<string[]>} - Array of notification IDs
    */
-  static async scheduleRecurringNotifications() {
+  static async scheduleRecurringNotifications(opts = {}) {
     try {
-      await this.cancelRecurringNotifications();
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
 
-      const sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
+      let { sourceName, messages } = opts;
+
+      if (sourceName === undefined) {
+        sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
+      }
       if (!sourceName) {
         console.log('No notification source main list set; skipping schedule.');
         return [];
       }
 
-      const stored = await AsyncStorage.getItem('mainLists');
-      const mainLists = stored ? JSON.parse(stored) : [];
-      const source = mainLists.find((ml) => ml.name === sourceName);
-      const messages = source?.notificationMessages ?? [];
+      if (messages === undefined) {
+        const stored = await AsyncStorage.getItem('mainLists');
+        const mainLists = stored ? JSON.parse(stored) : [];
+        const source = mainLists.find((ml) => ml.name === sourceName);
+        messages = source?.notificationMessages ?? [];
+      }
 
       if (messages.length === 0) {
         console.log(`Source list "${sourceName}" has no messages; skipping.`);

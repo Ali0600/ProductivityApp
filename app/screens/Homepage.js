@@ -133,7 +133,10 @@ function Homepage(props){
     const handleSaveMessages = useCallback(async () => {
         setNotificationMessages(currentMainList, draftMessages);
         await NotificationService.setNotificationSource(currentMainList);
-        await NotificationService.scheduleRecurringNotifications();
+        await NotificationService.scheduleRecurringNotifications({
+            sourceName: currentMainList,
+            messages: draftMessages,
+        });
         success();
         setMessagesModalVisible(false);
     }, [currentMainList, draftMessages, setNotificationMessages]);
