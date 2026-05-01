@@ -2,14 +2,17 @@ import { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import GlassCard from './GlassCard';
+import { tapLight, tapMedium, warning } from '../services/haptics';
 
 const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) => {
   const handlePress = () => {
+    tapLight();
     if (onPress) onPress(name);
   };
 
   const handleLongPress = () => {
     if (isPlus) return;
+    tapMedium();
     Alert.alert(name, 'Manage this list', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -42,7 +45,10 @@ const Tile = ({ name, isPlus, onPress, onRename, onDelete, style, textStyle }) =
             {
               text: 'Delete',
               style: 'destructive',
-              onPress: () => onDelete && onDelete(name),
+              onPress: () => {
+                warning();
+                onDelete && onDelete(name);
+              },
             },
           ]);
         },

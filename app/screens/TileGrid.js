@@ -15,6 +15,7 @@ import { SymbolView } from 'expo-symbols';
 import Tile from '../components/Tile';
 import GlassCard from '../components/GlassCard';
 import { useMainLists, useAppLoading } from '../hooks/useAppState';
+import { tapLight } from '../services/haptics';
 
 const LONG_NAME_THRESHOLD = 5;
 const isLongName = (name) => (name?.length ?? 0) > LONG_NAME_THRESHOLD;
@@ -42,6 +43,7 @@ function TileGrid() {
       Alert.alert('Duplicate', `A list called "${trimmed}" already exists.`);
       return;
     }
+    tapLight();
     addMainList(trimmed);
     setNewName('');
     setAddVisible(false);

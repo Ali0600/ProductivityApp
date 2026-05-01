@@ -1,11 +1,22 @@
 import { memo, useRef } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useAnimatedReaction, runOnJS } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import GlassCard from './GlassCard';
+import { tapLight, tapMedium, warning } from '../services/haptics';
+
+const useThresholdHaptic = (progress) => {
+    useAnimatedReaction(
+        () => progress.value >= 1,
+        (isPast, wasPast) => {
+            if (isPast && !wasPast) runOnJS(tapMedium)();
+        }
+    );
+};
 
 const RightAction = ({ progress, onPress }) => {
+    useThresholdHaptic(progress);
     const animatedStyle = useAnimatedStyle(() => {
         const p = Math.min(progress.value, 1);
         return {
@@ -23,6 +34,7 @@ const RightAction = ({ progress, onPress }) => {
 };
 
 const LeftAction = ({ progress, onPress }) => {
+    useThresholdHaptic(progress);
     const animatedStyle = useAnimatedStyle(() => {
         const p = Math.min(progress.value, 1);
         return {
@@ -49,6 +61,7 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
     };
 
     const handlePress = () => {
+        tapLight();
         if (onSelect) {
             onSelect(text);
         }
@@ -64,6 +77,7 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: () => {
+                        warning();
                         onRemove(text);
                         closeSwipe();
                     },
@@ -102,7 +116,7 @@ const List = ({ text, drag, isActive, onSelect, onRemove, onMove }) => {
                 tintColor={isActive ? 'rgba(255,255,255,0.3)' : 'rgba(46, 46, 80, 0.35)'}
             >
                 <TouchableOpacity
-                    onLongPress={drag}
+                    onLongPress={() => { tapMedium(); drag?.(); }}
                     onPress={handlePress}
                     activeOpacity={0.7}
                     style={styles.listContainer}

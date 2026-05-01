@@ -1,5 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    interpolateColor,
+    Easing,
+} from 'react-native-reanimated';
 import NotificationService from "../services/notificationService";
 import Task from "../components/Task";
 import List from "../components/List";
@@ -10,6 +18,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
+import { tapLight, selection } from '../services/haptics';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -51,6 +60,7 @@ function Homepage(props){
         };
 
         console.log("Adding new task:", newTask);
+        tapLight();
         addTaskToList(newTask);
         setTask(''); // Clear input
         setModalVisible(false);
@@ -70,6 +80,7 @@ function Homepage(props){
     const handleAddNewList = () => {
         if (!newListName.trim()) return;
 
+        tapLight();
         addList(newListName);
         setNewListName(''); // Clear input
         setTaskListVisible(false);
@@ -105,11 +116,30 @@ function Homepage(props){
         );
     }, [mainLists, currentMainList, moveSideList]);
 
+    const pulse = useSharedValue(0);
+    useEffect(() => {
+        pulse.value = withRepeat(
+            withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
+            -1,
+            true
+        );
+    }, [pulse]);
+
+    const titleAnimatedStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(pulse.value, [0, 1], ['#ffffff', '#a5b4fc']),
+        textShadowColor: interpolateColor(
+            pulse.value,
+            [0, 1],
+            ['rgba(165, 180, 252, 0)', 'rgba(165, 180, 252, 0.6)']
+        ),
+    }));
+
     const cycleList = useCallback((direction) => {
         if (!lists || lists.length <= 1) return;
         const idx = lists.findIndex(l => l.listName === currentList);
         if (idx === -1) return;
         const nextIdx = (idx + direction + lists.length) % lists.length;
+        selection();
         switchList(lists[nextIdx].listName);
     }, [lists, currentList, switchList]);
 
@@ -259,9 +289,12 @@ function Homepage(props){
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={exitToTileGrid}>
-                                <Text style={styles.textFont} numberOfLines={1}>
+                                <Animated.Text
+                                    style={[styles.textFont, styles.titleGlow, titleAnimatedStyle]}
+                                    numberOfLines={1}
+                                >
                                     {currentList || currentMainList}
-                                </Text>
+                                </Animated.Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => setSettingsVisible(true)}>
@@ -350,6 +383,10 @@ const styles = StyleSheet.create({
         textAlign: "center",
         paddingTop: 4,
         color: 'white',
+    },
+    titleGlow: {
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
     },
     buttonWrapper: {
         position: "relative",
