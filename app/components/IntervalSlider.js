@@ -11,6 +11,8 @@ import Animated, {
 const TRACK_WIDTH = 280;
 const THUMB_SIZE = 24;
 
+const DEFAULT_VALUES = [30, ...Array.from({ length: 24 }, (_, i) => (i + 1) * 60)];
+
 export const formatMinutes = (mins) => {
     const h = Math.floor(mins / 60);
     const m = mins % 60;
@@ -19,20 +21,27 @@ export const formatMinutes = (mins) => {
     return `${h}h ${m}min`;
 };
 
-const IntervalSlider = ({
-    value,
-    onChangeComplete,
-    minMinutes = 30,
-    maxMinutes = 1440,
-    stepMinutes = 30,
-}) => {
-    const stepCount = (maxMinutes - minMinutes) / stepMinutes;
-    const stepPx = TRACK_WIDTH / stepCount;
-    const initialOffset = ((value - minMinutes) / stepMinutes) * stepPx;
+const closestIndex = (target, values) => {
+    let bestIdx = 0;
+    let bestDiff = Math.abs(values[0] - target);
+    for (let i = 1; i < values.length; i++) {
+        const diff = Math.abs(values[i] - target);
+        if (diff < bestDiff) {
+            bestDiff = diff;
+            bestIdx = i;
+        }
+    }
+    return bestIdx;
+};
 
-    const offsetX = useSharedValue(initialOffset);
+const IntervalSlider = ({ value, onChangeComplete, values = DEFAULT_VALUES }) => {
+    const stepCount = values.length - 1;
+    const stepPx = TRACK_WIDTH / stepCount;
+    const initialIndex = closestIndex(value, values);
+
+    const offsetX = useSharedValue(initialIndex * stepPx);
     const startX = useSharedValue(0);
-    const [displayValue, setDisplayValue] = useState(value);
+    const [displayValue, setDisplayValue] = useState(values[initialIndex]);
 
     const updateDisplay = (mins) => setDisplayValue(mins);
 
@@ -42,23 +51,21 @@ const IntervalSlider = ({
         })
         .onUpdate((e) => {
             const raw = Math.max(0, Math.min(TRACK_WIDTH, startX.value + e.translationX));
-            const snapped = Math.round(raw / stepPx) * stepPx;
-            offsetX.value = snapped;
-            const mins = minMinutes + Math.round(snapped / stepPx) * stepMinutes;
-            runOnJS(updateDisplay)(mins);
+            const idx = Math.round(raw / stepPx);
+            offsetX.value = idx * stepPx;
+            runOnJS(updateDisplay)(values[idx]);
         })
         .onEnd(() => {
-            const mins = minMinutes + Math.round(offsetX.value / stepPx) * stepMinutes;
-            runOnJS(onChangeComplete)(mins);
+            const idx = Math.round(offsetX.value / stepPx);
+            runOnJS(onChangeComplete)(values[idx]);
         });
 
     const tap = Gesture.Tap().onEnd((e) => {
         const raw = Math.max(0, Math.min(TRACK_WIDTH, e.x - THUMB_SIZE / 2));
-        const snapped = Math.round(raw / stepPx) * stepPx;
-        offsetX.value = withTiming(snapped, { duration: 120 });
-        const mins = minMinutes + Math.round(snapped / stepPx) * stepMinutes;
-        runOnJS(updateDisplay)(mins);
-        runOnJS(onChangeComplete)(mins);
+        const idx = Math.round(raw / stepPx);
+        offsetX.value = withTiming(idx * stepPx, { duration: 120 });
+        runOnJS(updateDisplay)(values[idx]);
+        runOnJS(onChangeComplete)(values[idx]);
     });
 
     const composed = Gesture.Race(pan, tap);
@@ -83,8 +90,8 @@ const IntervalSlider = ({
                 </View>
             </GestureDetector>
             <View style={styles.bounds}>
-                <Text style={styles.boundLabel}>{formatMinutes(minMinutes)}</Text>
-                <Text style={styles.boundLabel}>{formatMinutes(maxMinutes)}</Text>
+                <Text style={styles.boundLabel}>{formatMinutes(values[0])}</Text>
+                <Text style={styles.boundLabel}>{formatMinutes(values[values.length - 1])}</Text>
             </View>
         </View>
     );
