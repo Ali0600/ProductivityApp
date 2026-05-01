@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
 import Animated, {
     useSharedValue,
@@ -18,7 +18,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
-import { tapLight, selection, success, warning } from '../services/haptics';
+import { tapLight, selection, warning } from '../services/haptics';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -29,7 +29,6 @@ function Homepage(props){
     const [task, setTask] = useState('');
     const [newListName, setNewListName] = useState('');
     const [messagesModalVisible, setMessagesModalVisible] = useState(false);
-    const [draftMessages, setDraftMessages] = useState([]);
     const [newMessageText, setNewMessageText] = useState('');
     const [scheduledModalVisible, setScheduledModalVisible] = useState(false);
     const [scheduledList, setScheduledList] = useState([]);
@@ -121,43 +120,44 @@ function Homepage(props){
         );
     }, [mainLists, currentMainList, moveSideList]);
 
+    const currentMessages = useMemo(() => {
+        const ml = mainLists.find((m) => m.name === currentMainList);
+        return ml?.notificationMessages ?? [];
+    }, [mainLists, currentMainList]);
+
     const handleOpenMessages = useCallback(() => {
-        const current = mainLists.find((ml) => ml.name === currentMainList);
-        setDraftMessages(current?.notificationMessages ?? []);
         setNewMessageText('');
         setMessagesModalVisible(true);
         setSettingsVisible(false);
         tapLight();
-    }, [mainLists, currentMainList]);
+    }, []);
 
-    const handleSaveMessages = useCallback(async () => {
-        setNotificationMessages(currentMainList, draftMessages);
-        await NotificationService.setNotificationSource(currentMainList);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList,
-            messages: draftMessages,
-        });
-        success();
-        setMessagesModalVisible(false);
-    }, [currentMainList, draftMessages, setNotificationMessages]);
-
-    const handleCancelMessages = useCallback(() => {
+    const handleCloseMessages = useCallback(() => {
         tapLight();
         setMessagesModalVisible(false);
     }, []);
 
-    const handleAddMessage = () => {
+    const persistAndReschedule = useCallback(async (next) => {
+        setNotificationMessages(currentMainList, next);
+        await NotificationService.setNotificationSource(currentMainList);
+        await NotificationService.scheduleRecurringNotifications({
+            sourceName: currentMainList,
+            messages: next,
+        });
+    }, [currentMainList, setNotificationMessages]);
+
+    const handleAddMessage = useCallback(async () => {
         const trimmed = newMessageText.trim();
         if (!trimmed) return;
         tapLight();
-        setDraftMessages((prev) => [...prev, trimmed]);
         setNewMessageText('');
-    };
+        await persistAndReschedule([...currentMessages, trimmed]);
+    }, [newMessageText, currentMessages, persistAndReschedule]);
 
-    const handleDeleteMessage = (idx) => {
+    const handleDeleteMessage = useCallback(async (idx) => {
         warning();
-        setDraftMessages((prev) => prev.filter((_, i) => i !== idx));
-    };
+        await persistAndReschedule(currentMessages.filter((_, i) => i !== idx));
+    }, [currentMessages, persistAndReschedule]);
 
     const handleOpenScheduled = useCallback(async () => {
         tapLight();
@@ -363,7 +363,7 @@ function Homepage(props){
                                     </Text>
 
                                     <FlatList
-                                        data={draftMessages}
+                                        data={currentMessages}
                                         keyExtractor={(_, i) => `msg-${i}`}
                                         renderItem={({ item, index }) => (
                                             <View style={styles.messageRow}>
@@ -403,10 +403,7 @@ function Homepage(props){
                                     colorScheme="dark"
                                     tintColor="rgba(46, 46, 80, 0.45)"
                                 >
-                                    <TouchableOpacity onPress={handleCancelMessages}>
-                                        <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={handleSaveMessages}>
+                                    <TouchableOpacity onPress={handleCloseMessages}>
                                         <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
                                     </TouchableOpacity>
                                 </GlassCard>
