@@ -135,6 +135,7 @@ function Homepage(props){
     const handleCloseMessages = useCallback(() => {
         tapLight();
         setMessagesModalVisible(false);
+        setSettingsVisible(true);
     }, []);
 
     const persistAndReschedule = useCallback(async (next) => {
