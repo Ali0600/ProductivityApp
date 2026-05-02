@@ -287,10 +287,10 @@ export default class NotificationService {
 
       const quiet = await this.getQuietHours();
       const intervalMs = intervalMinutes * 60 * 1000;
-      const notificationIds = [];
       const MAX_CANDIDATES = 200;
       const baseTime = Date.now();
 
+      const tasks = [];
       let scheduled = 0;
       let candidate = 0;
       while (scheduled < this.MAX_SCHEDULED_NOTIFICATIONS && candidate < MAX_CANDIDATES) {
@@ -301,29 +301,31 @@ export default class NotificationService {
           continue;
         }
 
+        const sequence = scheduled + 1;
         const body = messages[scheduled % messages.length];
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Productivity Reminder',
-            body,
-            sound: true,
-            data: {
-              type: 'recurring_reminder',
-              sequence: scheduled + 1,
-              scheduledFor: triggerDate.getTime(),
-              sourceMainList: sourceName,
+        tasks.push(
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Productivity Reminder',
+              body,
+              sound: true,
+              data: {
+                type: 'recurring_reminder',
+                sequence,
+                scheduledFor: triggerDate.getTime(),
+                sourceMainList: sourceName,
+              },
             },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: triggerDate,
-          },
-        });
-
-        notificationIds.push(notificationId);
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: triggerDate,
+            },
+          })
+        );
         scheduled += 1;
       }
 
+      const notificationIds = await Promise.all(tasks);
       await AsyncStorage.setItem(
         this.RECURRING_NOTIFICATIONS_KEY,
         JSON.stringify(notificationIds)
