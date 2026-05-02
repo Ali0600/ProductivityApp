@@ -1057,7 +1057,21 @@ function Homepage(props){
                                                         ),
                                                     }))
                                                 }
-                                                placeholder="Variable name (e.g., Weight)"
+                                                placeholder="Name"
+                                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                            />
+                                            <TextInput
+                                                style={styles.variableValueInput}
+                                                value={v.lastValue}
+                                                onChangeText={(text) =>
+                                                    setTaskEditor((r) => ({
+                                                        ...r,
+                                                        draftVariables: r.draftVariables.map((x, i) =>
+                                                            i === idx ? { ...x, lastValue: text } : x
+                                                        ),
+                                                    }))
+                                                }
+                                                placeholder="Value"
                                                 placeholderTextColor="rgba(255,255,255,0.5)"
                                             />
                                             <TouchableOpacity
@@ -1736,6 +1750,15 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     variableNameInput: {
+        flex: 1.4,
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    variableValueInput: {
         flex: 1,
         color: 'white',
         borderWidth: 1,
