@@ -477,11 +477,7 @@ function Homepage(props){
                             colorScheme="dark"
                             tintColor="rgba(46, 46, 80, 0.45)"
                         >
-                            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                                <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                            <TouchableOpacity onPress={() => { tapLight(); setSettingsVisible(false); }}>
                                 <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
                         </GlassCard>
