@@ -1223,6 +1223,7 @@ function Homepage(props){
                                                 placeholder={`Enter ${d.name}`}
                                                 placeholderTextColor="rgba(255,255,255,0.5)"
                                                 returnKeyType={idx === completionLogger.drafts.length - 1 ? 'done' : 'next'}
+                                                autoFocus={idx === 0}
                                             />
                                         </View>
                                     ))}
