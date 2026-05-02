@@ -975,11 +975,11 @@ function Homepage(props){
                             tintColor="rgba(46, 46, 80, 0.45)"
                             colorScheme="dark"
                         >
-                            <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
-                               <SymbolView name="line.3.horizontal" size={40} tintColor="white" />
+                            <TouchableOpacity onPress={exitToTileGrid}>
+                               <SymbolView name="house.fill" size={40} tintColor="white" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={exitToTileGrid}>
+                            <TouchableOpacity onPress={() => setMenuPanalVisible(true)}>
                                 <Animated.Text
                                     style={[styles.textFont, styles.titleGlow, titleAnimatedStyle]}
                                     numberOfLines={1}
