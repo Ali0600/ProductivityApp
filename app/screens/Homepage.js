@@ -308,7 +308,11 @@ function Homepage(props){
             ) : (
                 <>
                     <Modal visible={modalVisible} animationType="slide" transparent={true}>
-                        <GlassCard style={styles.modalContent}>
+                        <GlassCard
+                            style={styles.modalContent}
+                            colorScheme="dark"
+                            tintColor="rgba(46, 46, 80, 0.45)"
+                        >
                             <TextInput
                                 style={styles.inputForms}
                                 onChangeText={text => setTask(text)}
@@ -318,7 +322,11 @@ function Homepage(props){
                             />
                         </GlassCard>
 
-                        <GlassCard style={styles.buttonWrapper}>
+                        <GlassCard
+                            style={styles.buttonWrapper}
+                            colorScheme="dark"
+                            tintColor="rgba(46, 46, 80, 0.45)"
+                        >
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <SymbolView name="minus.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
@@ -383,7 +391,11 @@ function Homepage(props){
                       </GestureHandlerRootView>
 
                         <Modal visible={taskListVisible} animationType="slide" transparent={true}>
-                            <GlassCard style={styles.modalContent}>
+                            <GlassCard
+                                style={styles.modalContent}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
                                 <TextInput
                                     style={styles.inputForms}
                                     onChangeText={text => setNewListName(text)}
@@ -393,7 +405,11 @@ function Homepage(props){
                                 />
                             </GlassCard>
 
-                            <GlassCard style={styles.buttonWrapper}>
+                            <GlassCard
+                                style={styles.buttonWrapper}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
                                 <TouchableOpacity onPress={() => setTaskListVisible(false)}>
                                     <SymbolView name="minus.circle.fill" size={60} tintColor="white" />
                                 </TouchableOpacity>
@@ -406,7 +422,11 @@ function Homepage(props){
                     </Modal>
 
                     <Modal visible={settingsVisible} animationType="slide" transparent={true}>
-                        <GlassCard style={styles.modalContent}>
+                        <GlassCard
+                            style={styles.modalContent}
+                            colorScheme="dark"
+                            tintColor="rgba(46, 46, 80, 0.45)"
+                        >
                             <Text style={styles.settingsTitle}>Notification Settings</Text>
 
                             <View style={styles.settingsRow}>
@@ -452,7 +472,11 @@ function Homepage(props){
                             </TouchableOpacity>
                         </GlassCard>
 
-                        <GlassCard style={styles.buttonWrapper}>
+                        <GlassCard
+                            style={styles.buttonWrapper}
+                            colorScheme="dark"
+                            tintColor="rgba(46, 46, 80, 0.45)"
+                        >
                             <TouchableOpacity onPress={() => setSettingsVisible(false)}>
                                 <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
                             </TouchableOpacity>
