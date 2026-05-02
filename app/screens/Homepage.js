@@ -15,6 +15,59 @@ import GlassCard from "../components/GlassCard";
 import IntervalSlider, { formatMinutes, formatTimeOfDay } from "../components/IntervalSlider";
 
 const TIME_OF_DAY_VALUES = Array.from({ length: 48 }, (_, i) => i * 30);
+
+const isRuleTargetMissing = (rule, mainData) => {
+    if (!rule || !mainData) return false;
+    if (rule.type === 'task') {
+        const sl = mainData.sideLists?.find((s) => s.listName === rule.sideListName);
+        return !sl || !sl.tasks?.some((t) => t.id === rule.taskId);
+    }
+    if (rule.type === 'sideList') {
+        return !mainData.sideLists?.some((s) => s.listName === rule.sideListName);
+    }
+    return false;
+};
+
+const isRuleCurrentlyActive = (rule, mainData) => {
+    if (!rule || !mainData) return false;
+    const now = Date.now();
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+    const inToday = (ts) => {
+        if (!ts) return false;
+        const t = new Date(ts).getTime();
+        return t >= dayStart.getTime() && t <= now;
+    };
+    if (rule.type === 'task') {
+        const sl = mainData.sideLists?.find((s) => s.listName === rule.sideListName);
+        const task = sl?.tasks?.find((t) => t.id === rule.taskId);
+        return inToday(task?.completedAt);
+    }
+    if (rule.type === 'sideList') {
+        const sl = mainData.sideLists?.find((s) => s.listName === rule.sideListName);
+        return inToday(sl?.lastCompletedAt);
+    }
+    if (rule.type === 'mainList') {
+        return (mainData.sideLists ?? []).some((sl) => inToday(sl.lastCompletedAt));
+    }
+    return false;
+};
+
+const formatRuleChip = (rule, mainData) => {
+    if (!rule) return { label: '+ Add pause rule', tone: 'dim' };
+    if (isRuleTargetMissing(rule, mainData)) return { label: '⚠  Rule target missing', tone: 'warn' };
+    if (rule.type === 'task') {
+        const sl = mainData?.sideLists?.find((s) => s.listName === rule.sideListName);
+        const task = sl?.tasks?.find((t) => t.id === rule.taskId);
+        return { label: `⊘  Pause when "${task?.taskName ?? '…'}" is done`, tone: 'normal' };
+    }
+    if (rule.type === 'sideList') {
+        return { label: `⊘  Pause when "${rule.sideListName}" is done`, tone: 'normal' };
+    }
+    if (rule.type === 'mainList') {
+        return { label: '⊘  Pause when any task is done', tone: 'normal' };
+    }
+    return { label: '+ Add pause rule', tone: 'dim' };
+};
 import { SymbolView } from 'expo-symbols';
 import moment from "moment";
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -40,6 +93,7 @@ function Homepage(props){
     const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
     const [quietHoursStart, setQuietHoursStart] = useState(0);
     const [quietHoursEnd, setQuietHoursEnd] = useState(480);
+    const [ruleEditor, setRuleEditor] = useState({ visible: false, messageIndex: -1, draft: null });
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -58,7 +112,7 @@ function Homepage(props){
     // Use our custom hooks
     const { isLoading, error } = useAppLoading();
     const { lists, currentList, currentListData, addList, removeList, switchList, updateLists, moveSideList } = useLists();
-    const { mainLists, currentMainList, exitToTileGrid, setNotificationMessages, setNotificationInterval } = useMainLists();
+    const { mainLists, currentMainList, currentMainData, exitToTileGrid, setNotificationMessages, setNotificationInterval } = useMainLists();
     const {
         addTaskToList,
         reorderTasksInList,
@@ -245,13 +299,43 @@ function Homepage(props){
         if (!trimmed) return;
         tapLight();
         setNewMessageText('');
-        await persistAndReschedule([...currentMessages, trimmed]);
+        await persistAndReschedule([...currentMessages, { body: trimmed, rule: null }]);
     }, [newMessageText, currentMessages, persistAndReschedule]);
 
     const handleDeleteMessage = useCallback(async (idx) => {
         warning();
         await persistAndReschedule(currentMessages.filter((_, i) => i !== idx));
     }, [currentMessages, persistAndReschedule]);
+
+    const handleOpenRuleEditor = useCallback((index) => {
+        tapLight();
+        const msg = currentMessages[index];
+        const existing = msg && typeof msg === 'object' ? msg.rule ?? null : null;
+        setRuleEditor({ visible: true, messageIndex: index, draft: existing });
+    }, [currentMessages]);
+
+    const handleCloseRuleEditor = useCallback(() => {
+        setRuleEditor({ visible: false, messageIndex: -1, draft: null });
+    }, []);
+
+    const handleSaveRule = useCallback(async () => {
+        tapLight();
+        const { messageIndex, draft } = ruleEditor;
+        if (messageIndex < 0) {
+            handleCloseRuleEditor();
+            return;
+        }
+        let cleanDraft = draft;
+        if (draft?.type === 'task' && (!draft.taskId || !draft.sideListName)) cleanDraft = null;
+        else if (draft?.type === 'sideList' && !draft.sideListName) cleanDraft = null;
+        const next = currentMessages.map((m, i) => {
+            if (i !== messageIndex) return m;
+            const body = typeof m === 'string' ? m : m.body;
+            return { body, rule: cleanDraft };
+        });
+        handleCloseRuleEditor();
+        await persistAndReschedule(next);
+    }, [ruleEditor, currentMessages, persistAndReschedule, handleCloseRuleEditor]);
 
     const handleOpenScheduled = useCallback(async () => {
         tapLight();
@@ -501,16 +585,35 @@ function Homepage(props){
                                     <FlatList
                                         data={currentMessages}
                                         keyExtractor={(_, i) => `msg-${i}`}
-                                        renderItem={({ item, index }) => (
-                                            <View style={styles.messageRow}>
-                                                <Text style={styles.messageText} numberOfLines={2}>
-                                                    {item}
-                                                </Text>
-                                                <TouchableOpacity onPress={() => handleDeleteMessage(index)}>
-                                                    <SymbolView name="trash.fill" size={22} tintColor="rgba(255,180,180,0.9)" />
-                                                </TouchableOpacity>
-                                            </View>
-                                        )}
+                                        renderItem={({ item, index }) => {
+                                            const body = typeof item === 'string' ? item : item?.body;
+                                            const rule = typeof item === 'string' ? null : item?.rule;
+                                            const chip = formatRuleChip(rule, currentMainData);
+                                            const active = isRuleCurrentlyActive(rule, currentMainData);
+                                            const chipStyle = [
+                                                styles.ruleChipText,
+                                                chip.tone === 'dim' && styles.ruleChipDim,
+                                                chip.tone === 'warn' && styles.ruleChipWarn,
+                                                active && styles.ruleChipActive,
+                                            ];
+                                            return (
+                                                <View style={styles.messageRow}>
+                                                    <View style={styles.messageRowLeft}>
+                                                        <Text style={styles.messageText} numberOfLines={2}>
+                                                            {body}
+                                                        </Text>
+                                                        <TouchableOpacity onPress={() => handleOpenRuleEditor(index)}>
+                                                            <Text style={chipStyle} numberOfLines={1}>
+                                                                {active ? '● ' : ''}{chip.label}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                    <TouchableOpacity onPress={() => handleDeleteMessage(index)}>
+                                                        <SymbolView name="trash.fill" size={22} tintColor="rgba(255,180,180,0.9)" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            );
+                                        }}
                                         ListEmptyComponent={
                                             <Text style={styles.messagesEmpty}>
                                                 No messages yet. Add one below to start receiving reminders.
@@ -544,6 +647,162 @@ function Homepage(props){
                                     </TouchableOpacity>
                                 </GlassCard>
                             </KeyboardAvoidingView>
+                        </SafeAreaView>
+                    </Modal>
+
+                    <Modal visible={ruleEditor.visible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <GlassCard
+                                style={styles.modalContent}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <Text style={styles.settingsTitle}>Pause this message when…</Text>
+
+                                <View style={styles.ruleSegments}>
+                                    {[
+                                        { key: 'none', label: 'None' },
+                                        { key: 'task', label: 'Task' },
+                                        { key: 'sideList', label: 'Side list' },
+                                        { key: 'mainList', label: 'Main list' },
+                                    ].map((opt) => {
+                                        const active = (ruleEditor.draft?.type ?? 'none') === opt.key;
+                                        return (
+                                            <TouchableOpacity
+                                                key={opt.key}
+                                                style={[styles.ruleSegment, active && styles.ruleSegmentActive]}
+                                                onPress={() => {
+                                                    selection();
+                                                    setRuleEditor((r) => ({
+                                                        ...r,
+                                                        draft: opt.key === 'none' ? null : { type: opt.key },
+                                                    }));
+                                                }}
+                                            >
+                                                <Text style={[styles.ruleSegmentText, active && styles.ruleSegmentTextActive]}>
+                                                    {opt.label}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+
+                                <View style={styles.ruleEditorBody}>
+                                    {(() => {
+                                        const draft = ruleEditor.draft;
+                                        if (!draft) {
+                                            return (
+                                                <Text style={styles.ruleHelpText}>
+                                                    This message will always cycle on schedule.
+                                                </Text>
+                                            );
+                                        }
+                                        if (draft.type === 'mainList') {
+                                            return (
+                                                <Text style={styles.ruleHelpText}>
+                                                    Pauses for the rest of today whenever any task in
+                                                    {' "'}{currentMainList}{'" '}is completed.
+                                                </Text>
+                                            );
+                                        }
+                                        if (draft.type === 'sideList') {
+                                            return (
+                                                <FlatList
+                                                    data={currentMainData?.sideLists ?? []}
+                                                    keyExtractor={(s) => s.listName}
+                                                    renderItem={({ item }) => {
+                                                        const selected = draft.sideListName === item.listName;
+                                                        return (
+                                                            <TouchableOpacity
+                                                                style={styles.rulePickerRow}
+                                                                onPress={() => {
+                                                                    selection();
+                                                                    setRuleEditor((r) => ({
+                                                                        ...r,
+                                                                        draft: { type: 'sideList', sideListName: item.listName },
+                                                                    }));
+                                                                }}
+                                                            >
+                                                                <Text style={styles.rulePickerText} numberOfLines={1}>
+                                                                    {item.listName}
+                                                                </Text>
+                                                                {selected ? (
+                                                                    <SymbolView name="checkmark" size={20} tintColor="#a5b4fc" />
+                                                                ) : null}
+                                                            </TouchableOpacity>
+                                                        );
+                                                    }}
+                                                    ListEmptyComponent={
+                                                        <Text style={styles.ruleHelpText}>No side lists in this main list.</Text>
+                                                    }
+                                                />
+                                            );
+                                        }
+                                        if (draft.type === 'task') {
+                                            const rows = (currentMainData?.sideLists ?? []).flatMap((sl) => {
+                                                const header = [{ kind: 'header', listName: sl.listName }];
+                                                const tasks = sl.tasks.map((t) => ({ kind: 'task', task: t, listName: sl.listName }));
+                                                return [...header, ...tasks];
+                                            });
+                                            return (
+                                                <FlatList
+                                                    data={rows}
+                                                    keyExtractor={(item, i) =>
+                                                        item.kind === 'task'
+                                                            ? `t-${item.listName}-${item.task.id}`
+                                                            : `h-${item.listName}-${i}`
+                                                    }
+                                                    renderItem={({ item }) => {
+                                                        if (item.kind === 'header') {
+                                                            return <Text style={styles.rulePickerHeader}>{item.listName}</Text>;
+                                                        }
+                                                        const selected =
+                                                            draft.taskId === item.task.id &&
+                                                            draft.sideListName === item.listName;
+                                                        return (
+                                                            <TouchableOpacity
+                                                                style={styles.rulePickerRow}
+                                                                onPress={() => {
+                                                                    selection();
+                                                                    setRuleEditor((r) => ({
+                                                                        ...r,
+                                                                        draft: {
+                                                                            type: 'task',
+                                                                            taskId: item.task.id,
+                                                                            sideListName: item.listName,
+                                                                        },
+                                                                    }));
+                                                                }}
+                                                            >
+                                                                <Text style={styles.rulePickerText} numberOfLines={1}>
+                                                                    {item.task.taskName}
+                                                                </Text>
+                                                                {selected ? (
+                                                                    <SymbolView name="checkmark" size={20} tintColor="#a5b4fc" />
+                                                                ) : null}
+                                                            </TouchableOpacity>
+                                                        );
+                                                    }}
+                                                    ListEmptyComponent={
+                                                        <Text style={styles.ruleHelpText}>No tasks in this main list.</Text>
+                                                    }
+                                                />
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </View>
+                            </GlassCard>
+
+                            <GlassCard
+                                style={styles.buttonWrapper}
+                                colorScheme="dark"
+                                tintColor="rgba(46, 46, 80, 0.45)"
+                            >
+                                <TouchableOpacity onPress={handleSaveRule}>
+                                    <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                </TouchableOpacity>
+                            </GlassCard>
                         </SafeAreaView>
                     </Modal>
 
@@ -902,10 +1161,87 @@ const styles = StyleSheet.create({
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: 'rgba(255,255,255,0.15)',
     },
+    messageRowLeft: {
+        flex: 1,
+        marginRight: 12,
+    },
     messageText: {
+        color: 'white',
+    },
+    ruleChipText: {
+        color: '#a5b4fc',
+        fontSize: 12,
+        marginTop: 4,
+    },
+    ruleChipDim: {
+        color: 'rgba(255,255,255,0.45)',
+    },
+    ruleChipWarn: {
+        color: 'rgba(255, 200, 120, 0.95)',
+    },
+    ruleChipActive: {
+        color: '#86efac',
+    },
+    ruleSegments: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginHorizontal: 16,
+        marginBottom: 12,
+        gap: 6,
+    },
+    ruleSegment: {
+        flex: 1,
+        paddingVertical: 8,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
+        alignItems: 'center',
+    },
+    ruleSegmentActive: {
+        backgroundColor: 'rgba(165, 180, 252, 0.25)',
+        borderColor: '#a5b4fc',
+    },
+    ruleSegmentText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+    },
+    ruleSegmentTextActive: {
+        color: 'white',
+        fontWeight: '600',
+    },
+    ruleEditorBody: {
+        flex: 1,
+        marginHorizontal: 16,
+        marginBottom: 16,
+    },
+    ruleHelpText: {
+        color: 'rgba(255,255,255,0.7)',
+        textAlign: 'center',
+        paddingVertical: 24,
+        fontSize: 13,
+    },
+    rulePickerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(255,255,255,0.12)',
+    },
+    rulePickerText: {
         color: 'white',
         flex: 1,
         marginRight: 12,
+    },
+    rulePickerHeader: {
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: 11,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginTop: 14,
+        marginBottom: 4,
+        paddingHorizontal: 12,
     },
     messagesEmpty: {
         color: 'rgba(255,255,255,0.6)',

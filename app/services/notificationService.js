@@ -22,6 +22,35 @@ const isInQuietHours = (date, startMin, endMin) => {
   return minOfDay >= startMin || minOfDay < endMin;
 };
 
+const startOfDayMs = (d) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.getTime();
+};
+
+const isRuleActive = (rule, sourceMainList, triggerDate) => {
+  if (!rule || !sourceMainList) return false;
+  const dayStart = startOfDayMs(triggerDate);
+  const dayEnd = triggerDate.getTime();
+  const hitWindow = (ts) => {
+    const t = ts ? new Date(ts).getTime() : 0;
+    return t >= dayStart && t < dayEnd;
+  };
+  if (rule.type === 'task') {
+    const sl = sourceMainList.sideLists?.find((s) => s.listName === rule.sideListName);
+    const task = sl?.tasks?.find((t) => t.id === rule.taskId);
+    return hitWindow(task?.completedAt);
+  }
+  if (rule.type === 'sideList') {
+    const sl = sourceMainList.sideLists?.find((s) => s.listName === rule.sideListName);
+    return hitWindow(sl?.lastCompletedAt);
+  }
+  if (rule.type === 'mainList') {
+    return (sourceMainList.sideLists ?? []).some((sl) => hitWindow(sl.lastCompletedAt));
+  }
+  return false;
+};
+
 export default class NotificationService {
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
   static NOTIFICATIONS_ENABLED_KEY = 'notificationsEnabled';
@@ -257,7 +286,7 @@ export default class NotificationService {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
 
-      let { sourceName, messages, intervalMinutes } = opts;
+      let { sourceName, messages, intervalMinutes, sourceMainList } = opts;
 
       if (sourceName === undefined) {
         sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
@@ -267,17 +296,13 @@ export default class NotificationService {
         return [];
       }
 
-      let source;
-      if (messages === undefined || intervalMinutes === undefined) {
+      if (sourceMainList === undefined || messages === undefined || intervalMinutes === undefined) {
         const stored = await AsyncStorage.getItem('mainLists');
         const mainLists = stored ? JSON.parse(stored) : [];
-        source = mainLists.find((ml) => ml.name === sourceName);
-      }
-      if (messages === undefined) {
-        messages = source?.notificationMessages ?? [];
-      }
-      if (intervalMinutes === undefined) {
-        intervalMinutes = source?.notificationIntervalMinutes ?? 60;
+        const found = mainLists.find((ml) => ml.name === sourceName);
+        if (sourceMainList === undefined) sourceMainList = found;
+        if (messages === undefined) messages = found?.notificationMessages ?? [];
+        if (intervalMinutes === undefined) intervalMinutes = found?.notificationIntervalMinutes ?? 60;
       }
 
       if (messages.length === 0) {
@@ -301,13 +326,25 @@ export default class NotificationService {
           continue;
         }
 
+        let pickedBody = null;
+        for (let attempt = 0; attempt < messages.length; attempt++) {
+          const m = messages[(scheduled + attempt) % messages.length];
+          const body = typeof m === 'string' ? m : m?.body;
+          const rule = typeof m === 'string' ? null : m?.rule;
+          if (!body) continue;
+          if (!isRuleActive(rule, sourceMainList, triggerDate)) {
+            pickedBody = body;
+            break;
+          }
+        }
+        if (!pickedBody) continue;
+
         const sequence = scheduled + 1;
-        const body = messages[scheduled % messages.length];
         tasks.push(
           Notifications.scheduleNotificationAsync({
             content: {
               title: 'Productivity Reminder',
-              body,
+              body: pickedBody,
               sound: true,
               data: {
                 type: 'recurring_reminder',

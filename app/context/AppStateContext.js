@@ -132,35 +132,70 @@ export const AppStateProvider = ({ children }) => {
     [currentMainList, mutateSideList]
   );
 
+  const rescheduleIfSource = useCallback(async (nextMainLists) => {
+    const source = await NotificationService.getNotificationSource();
+    if (!source || source !== currentMainList || !nextMainLists) return;
+    const sourceData = nextMainLists.find((ml) => ml.name === source);
+    if (!sourceData) return;
+    await NotificationService.scheduleRecurringNotifications({
+      sourceName: source,
+      sourceMainList: sourceData,
+    });
+  }, [currentMainList]);
+
   const completeTaskByIndex = useCallback(
     (listName, idx) => {
       if (!currentMainList) return;
-      mutateSideList(currentMainList, listName, (sl) => {
-        if (idx < 0 || idx >= sl.tasks.length) return sl;
-        const next = [...sl.tasks];
-        const done = { ...next[idx], completedAt: new Date() };
-        next.splice(idx, 1);
-        next.push(done);
-        return { ...sl, tasks: next, lastCompletedAt: new Date() };
+      let nextMainLists = null;
+      setMainLists((prev) => {
+        nextMainLists = prev.map((ml) => {
+          if (ml.name !== currentMainList) return ml;
+          return {
+            ...ml,
+            sideLists: ml.sideLists.map((sl) => {
+              if (sl.listName !== listName) return sl;
+              if (idx < 0 || idx >= sl.tasks.length) return sl;
+              const next = [...sl.tasks];
+              const done = { ...next[idx], completedAt: new Date() };
+              next.splice(idx, 1);
+              next.push(done);
+              return { ...sl, tasks: next, lastCompletedAt: new Date() };
+            }),
+          };
+        });
+        return nextMainLists;
       });
+      rescheduleIfSource(nextMainLists);
     },
-    [currentMainList, mutateSideList]
+    [currentMainList, rescheduleIfSource]
   );
 
   const completeTask = useCallback(
     (listName, taskId) => {
       if (!currentMainList) return;
-      mutateSideList(currentMainList, listName, (sl) => {
-        const idx = sl.tasks.findIndex((t) => t.id === taskId);
-        if (idx === -1) return sl;
-        const next = [...sl.tasks];
-        const done = { ...next[idx], completedAt: new Date() };
-        next.splice(idx, 1);
-        next.push(done);
-        return { ...sl, tasks: next, lastCompletedAt: new Date() };
+      let nextMainLists = null;
+      setMainLists((prev) => {
+        nextMainLists = prev.map((ml) => {
+          if (ml.name !== currentMainList) return ml;
+          return {
+            ...ml,
+            sideLists: ml.sideLists.map((sl) => {
+              if (sl.listName !== listName) return sl;
+              const idx = sl.tasks.findIndex((t) => t.id === taskId);
+              if (idx === -1) return sl;
+              const next = [...sl.tasks];
+              const done = { ...next[idx], completedAt: new Date() };
+              next.splice(idx, 1);
+              next.push(done);
+              return { ...sl, tasks: next, lastCompletedAt: new Date() };
+            }),
+          };
+        });
+        return nextMainLists;
       });
+      rescheduleIfSource(nextMainLists);
     },
-    [currentMainList, mutateSideList]
+    [currentMainList, rescheduleIfSource]
   );
 
   const reorderTasks = useCallback(
