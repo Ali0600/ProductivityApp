@@ -51,7 +51,7 @@ const LeftAction = ({ progress, onPress }) => {
     );
 };
 
-const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
+const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate, onPress, variables }) => {
     const swipeableRef = useRef(null);
 
     const closeSwipe = () => {
@@ -84,6 +84,11 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
     };
 
     const handleComplete = () => {
+        if (variables && variables.length > 0) {
+            onComplete(index);
+            closeSwipe();
+            return;
+        }
         Alert.alert(
             "Complete Task",
             `Marking "${text}" as complete and moving to bottom of list`,
@@ -159,6 +164,7 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
             >
                 <TouchableOpacity
                     style={styles.taskContainer}
+                    onPress={onPress}
                     onLongPress={handleEdit}
                     delayLongPress={500}
                 >

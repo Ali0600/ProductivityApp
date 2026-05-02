@@ -21,17 +21,18 @@ export const useAppState = () => {
  * @returns {Object} Task management functions and data for the specified list
  */
 export const useListTasks = (listName) => {
-  const { 
-    lists, 
-    addTask, 
+  const {
+    lists,
+    addTask,
     removeTask,
-    removeTaskByIndex, 
-    updateTask, 
+    removeTaskByIndex,
+    updateTask,
     reorderTasks,
+    moveTask,
     completeTask,
     completeTaskByIndex
   } = useAppState();
-  
+
   // Find the specified list
   const list = lists.find(list => list.listName === listName);
   const tasks = list ? list.tasks : [];
@@ -42,9 +43,10 @@ export const useListTasks = (listName) => {
   const removeTaskFromListByIndex = useCallback((index) => removeTaskByIndex(listName, index), [removeTaskByIndex, listName]);
   const updateTaskInList = useCallback((taskId, updates) => updateTask(listName, taskId, updates), [updateTask, listName]);
   const reorderTasksInList = useCallback((reorderedTasks) => reorderTasks(listName, reorderedTasks), [reorderTasks, listName]);
+  const moveTaskFromList = useCallback((toListName, taskId) => moveTask(listName, toListName, taskId), [moveTask, listName]);
   const completeTaskInList = useCallback((taskId) => completeTask(listName, taskId), [completeTask, listName]);
   const completeTaskInListByIndex = useCallback((index) => completeTaskByIndex(listName, index), [completeTaskByIndex, listName]);
-  
+
   return {
     tasks,
     addTaskToList,
@@ -52,6 +54,7 @@ export const useListTasks = (listName) => {
     removeTaskFromListByIndex,
     updateTaskInList,
     reorderTasksInList,
+    moveTaskFromList,
     completeTaskInList,
     completeTaskInListByIndex,
   };

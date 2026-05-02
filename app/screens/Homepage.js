@@ -74,7 +74,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppState, useLists, useListTasks, useAppLoading, useMainLists } from '../hooks/useAppState';
-import { tapLight, selection, warning } from '../services/haptics';
+import { tapLight, selection, warning, success } from '../services/haptics';
 
 function Homepage(props){
     const [modalVisible, setModalVisible] = useState(false);
@@ -94,6 +94,22 @@ function Homepage(props){
     const [quietHoursStart, setQuietHoursStart] = useState(0);
     const [quietHoursEnd, setQuietHoursEnd] = useState(480);
     const [messageEditor, setMessageEditor] = useState({ visible: false, messageIndex: -1, draftBody: '', draftRule: null });
+    const [taskEditor, setTaskEditor] = useState({
+        visible: false,
+        taskId: null,
+        draftName: '',
+        draftNotes: '',
+        draftVariables: [],
+        creationTime: null,
+        completedAt: null,
+    });
+    const [completionLogger, setCompletionLogger] = useState({
+        visible: false,
+        taskIndex: -1,
+        taskId: null,
+        taskName: '',
+        drafts: [],
+    });
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -118,6 +134,7 @@ function Homepage(props){
         reorderTasksInList,
         removeTaskFromListByIndex,
         updateTaskInList,
+        moveTaskFromList,
         completeTaskInListByIndex,
     } = useListTasks(currentList);
 
@@ -337,6 +354,99 @@ function Homepage(props){
         handleCloseMessageEditor();
         await persistAndReschedule(next);
     }, [messageEditor, currentMessages, persistAndReschedule, handleCloseMessageEditor]);
+
+    const handleOpenTaskEditor = useCallback((task) => {
+        if (!task) return;
+        tapLight();
+        setTaskEditor({
+            visible: true,
+            taskId: task.id,
+            draftName: task.taskName ?? '',
+            draftNotes: task.notes ?? '',
+            draftVariables: (task.variables ?? []).map((v) => ({
+                name: v.name ?? '',
+                lastValue: v.lastValue ?? '',
+            })),
+            creationTime: task.creationTime ?? null,
+            completedAt: task.completedAt ?? null,
+        });
+    }, []);
+
+    const handleCloseTaskEditor = useCallback(() => {
+        setTaskEditor((r) => ({ ...r, visible: false }));
+    }, []);
+
+    const cleanVariables = (vars) =>
+        (vars ?? [])
+            .map((v) => ({ name: (v.name ?? '').trim(), lastValue: v.lastValue ?? '' }))
+            .filter((v) => v.name.length > 0);
+
+    const handleSaveTask = useCallback(() => {
+        const { taskId, draftName, draftNotes, draftVariables } = taskEditor;
+        if (!taskId) {
+            handleCloseTaskEditor();
+            return;
+        }
+        const trimmed = (draftName ?? '').trim();
+        if (!trimmed) return;
+        tapLight();
+        updateTaskInList(taskId, {
+            taskName: trimmed,
+            notes: draftNotes ?? '',
+            variables: cleanVariables(draftVariables),
+        });
+        handleCloseTaskEditor();
+    }, [taskEditor, updateTaskInList, handleCloseTaskEditor]);
+
+    const handleMoveTaskTo = useCallback((toListName) => {
+        const { taskId, draftName, draftNotes, draftVariables } = taskEditor;
+        if (!taskId || !toListName || toListName === currentList) return;
+        selection();
+        const trimmed = (draftName ?? '').trim();
+        if (trimmed) {
+            updateTaskInList(taskId, {
+                taskName: trimmed,
+                notes: draftNotes ?? '',
+                variables: cleanVariables(draftVariables),
+            });
+        }
+        moveTaskFromList(toListName, taskId);
+        handleCloseTaskEditor();
+    }, [taskEditor, currentList, updateTaskInList, moveTaskFromList, handleCloseTaskEditor]);
+
+    const handleCompleteTask = useCallback((index) => {
+        const t = currentListData?.tasks?.[index];
+        if (t?.variables?.length > 0) {
+            tapLight();
+            setCompletionLogger({
+                visible: true,
+                taskIndex: index,
+                taskId: t.id,
+                taskName: t.taskName ?? '',
+                drafts: t.variables.map((v) => ({ name: v.name, value: v.lastValue ?? '' })),
+            });
+            return;
+        }
+        completeTaskInListByIndex(index);
+    }, [currentListData, completeTaskInListByIndex]);
+
+    const handleCloseCompletionLogger = useCallback(() => {
+        setCompletionLogger((r) => ({ ...r, visible: false }));
+    }, []);
+
+    const handleSaveCompletion = useCallback(() => {
+        const { taskIndex, taskId, drafts } = completionLogger;
+        if (taskIndex < 0 || !taskId) {
+            handleCloseCompletionLogger();
+            return;
+        }
+        success();
+        updateTaskInList(taskId, {
+            variables: drafts.map((d) => ({ name: d.name, lastValue: d.value ?? '' })),
+        });
+        completeTaskInListByIndex(taskIndex);
+        handleCloseCompletionLogger();
+    }, [completionLogger, updateTaskInList, completeTaskInListByIndex, handleCloseCompletionLogger]);
 
     const handleOpenScheduled = useCallback(async () => {
         tapLight();
@@ -833,6 +943,205 @@ function Homepage(props){
                     </Modal>
                     </Modal>
 
+                    <Modal visible={taskEditor.visible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+                                <GlassCard
+                                    style={styles.modalContent}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <Text style={styles.settingsTitle}>Edit task</Text>
+
+                                    <Text style={styles.ruleSectionLabel}>Name</Text>
+                                    <TextInput
+                                        style={styles.taskEditorNameInput}
+                                        value={taskEditor.draftName}
+                                        onChangeText={(text) =>
+                                            setTaskEditor((r) => ({ ...r, draftName: text }))
+                                        }
+                                        placeholder="Task name"
+                                        placeholderTextColor="rgba(255,255,255,0.5)"
+                                        returnKeyType="done"
+                                    />
+
+                                    <Text style={styles.ruleSectionLabel}>Notes</Text>
+                                    <TextInput
+                                        style={styles.messageEditorInput}
+                                        value={taskEditor.draftNotes}
+                                        onChangeText={(text) =>
+                                            setTaskEditor((r) => ({ ...r, draftNotes: text }))
+                                        }
+                                        placeholder="Optional notes"
+                                        placeholderTextColor="rgba(255,255,255,0.5)"
+                                        multiline
+                                    />
+
+                                    <Text style={styles.ruleSectionLabel}>Variables</Text>
+                                    {taskEditor.draftVariables.map((v, idx) => (
+                                        <View style={styles.variableRow} key={`var-${idx}`}>
+                                            <TextInput
+                                                style={styles.variableNameInput}
+                                                value={v.name}
+                                                onChangeText={(text) =>
+                                                    setTaskEditor((r) => ({
+                                                        ...r,
+                                                        draftVariables: r.draftVariables.map((x, i) =>
+                                                            i === idx ? { ...x, name: text } : x
+                                                        ),
+                                                    }))
+                                                }
+                                                placeholder="Variable name (e.g., Weight)"
+                                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                            />
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    tapLight();
+                                                    setTaskEditor((r) => ({
+                                                        ...r,
+                                                        draftVariables: r.draftVariables.filter((_, i) => i !== idx),
+                                                    }));
+                                                }}
+                                            >
+                                                <SymbolView name="minus.circle.fill" size={22} tintColor="rgba(255,180,180,0.9)" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                    <TouchableOpacity
+                                        style={styles.addVariableRow}
+                                        onPress={() => {
+                                            tapLight();
+                                            setTaskEditor((r) => ({
+                                                ...r,
+                                                draftVariables: [...r.draftVariables, { name: '', lastValue: '' }],
+                                            }));
+                                        }}
+                                    >
+                                        <SymbolView name="plus.circle.fill" size={22} tintColor="white" />
+                                        <Text style={styles.addVariableText}>Add variable</Text>
+                                    </TouchableOpacity>
+
+                                    {(taskEditor.creationTime || taskEditor.completedAt) ? (
+                                        <View style={styles.taskEditorMeta}>
+                                            {taskEditor.creationTime ? (
+                                                <Text style={styles.taskEditorMetaText}>
+                                                    Added {moment(taskEditor.creationTime).fromNow()}
+                                                </Text>
+                                            ) : null}
+                                            {taskEditor.completedAt ? (
+                                                <Text style={styles.taskEditorMetaText}>
+                                                    Last completed {moment(taskEditor.completedAt).fromNow()}
+                                                </Text>
+                                            ) : null}
+                                        </View>
+                                    ) : null}
+
+                                    {(() => {
+                                        const others = (currentMainData?.sideLists ?? []).filter(
+                                            (s) => s.listName !== currentList
+                                        );
+                                        if (others.length === 0) return null;
+                                        return (
+                                            <>
+                                                <Text style={styles.ruleSectionLabel}>Move to</Text>
+                                                <FlatList
+                                                    data={others}
+                                                    keyExtractor={(s) => s.listName}
+                                                    renderItem={({ item }) => (
+                                                        <TouchableOpacity
+                                                            style={styles.rulePickerRow}
+                                                            onPress={() => handleMoveTaskTo(item.listName)}
+                                                        >
+                                                            <Text style={styles.rulePickerText} numberOfLines={1}>
+                                                                {item.listName}
+                                                            </Text>
+                                                            <SymbolView
+                                                                name="arrow.right.circle.fill"
+                                                                size={22}
+                                                                tintColor="rgba(255,255,255,0.6)"
+                                                            />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                />
+                                            </>
+                                        );
+                                    })()}
+                                </GlassCard>
+
+                                <GlassCard
+                                    style={styles.buttonWrapper}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <TouchableOpacity onPress={handleCloseTaskEditor}>
+                                        <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
+                                    </TouchableOpacity>
+                                    {(() => {
+                                        const canSave = (taskEditor.draftName ?? '').trim().length > 0;
+                                        return (
+                                            <TouchableOpacity
+                                                onPress={handleSaveTask}
+                                                disabled={!canSave}
+                                                style={!canSave && { opacity: 0.4 }}
+                                            >
+                                                <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                            </TouchableOpacity>
+                                        );
+                                    })()}
+                                </GlassCard>
+                            </KeyboardAvoidingView>
+                        </SafeAreaView>
+                    </Modal>
+
+                    <Modal visible={completionLogger.visible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+                                <GlassCard
+                                    style={styles.modalContent}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <Text style={styles.settingsTitle}>{completionLogger.taskName}</Text>
+                                    <Text style={styles.messagesSubtitle}>Log values for this completion</Text>
+
+                                    {completionLogger.drafts.map((d, idx) => (
+                                        <View key={`logger-${idx}`}>
+                                            <Text style={styles.ruleSectionLabel}>{d.name}</Text>
+                                            <TextInput
+                                                style={styles.taskEditorNameInput}
+                                                value={d.value}
+                                                onChangeText={(text) =>
+                                                    setCompletionLogger((r) => ({
+                                                        ...r,
+                                                        drafts: r.drafts.map((x, i) =>
+                                                            i === idx ? { ...x, value: text } : x
+                                                        ),
+                                                    }))
+                                                }
+                                                placeholder={`Enter ${d.name}`}
+                                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                                returnKeyType={idx === completionLogger.drafts.length - 1 ? 'done' : 'next'}
+                                            />
+                                        </View>
+                                    ))}
+                                </GlassCard>
+
+                                <GlassCard
+                                    style={styles.buttonWrapper}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <TouchableOpacity onPress={handleCloseCompletionLogger}>
+                                        <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleSaveCompletion}>
+                                        <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                    </TouchableOpacity>
+                                </GlassCard>
+                            </KeyboardAvoidingView>
+                        </SafeAreaView>
+                    </Modal>
+
                     <Modal visible={scheduledModalVisible} animationType="slide" transparent={true}>
                         <SafeAreaView style={{ flex: 1 }}>
                             <GlassCard
@@ -1004,8 +1313,10 @@ function Homepage(props){
                                 taskId={item.id || `task-${currentList}-${index}`}
                                 creationTime={moment(item.completedAt ?? item.creationTime).fromNow()}
                                 onRemove={removeTaskFromListByIndex}
-                                onComplete={completeTaskInListByIndex}
+                                onComplete={handleCompleteTask}
                                 onUpdate={updateTaskInList}
+                                onPress={() => handleOpenTaskEditor(item)}
+                                variables={item.variables}
                             />
                         )}
                         ListEmptyComponent={
@@ -1260,6 +1571,54 @@ const styles = StyleSheet.create({
         marginHorizontal: 16,
         marginBottom: 12,
         minHeight: 44,
+    },
+    taskEditorNameInput: {
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginHorizontal: 16,
+        marginBottom: 12,
+    },
+    taskEditorMeta: {
+        marginHorizontal: 16,
+        marginTop: 4,
+        marginBottom: 12,
+        gap: 4,
+    },
+    taskEditorMetaText: {
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: 12,
+    },
+    variableRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 16,
+        marginBottom: 8,
+        gap: 10,
+    },
+    variableNameInput: {
+        flex: 1,
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    addVariableRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 16,
+        marginBottom: 12,
+        gap: 8,
+        paddingVertical: 6,
+    },
+    addVariableText: {
+        color: 'white',
+        fontSize: 14,
     },
     ruleHelpText: {
         color: 'rgba(255,255,255,0.7)',
