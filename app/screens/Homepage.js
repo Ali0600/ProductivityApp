@@ -94,6 +94,14 @@ function Homepage(props){
     const [quietHoursStart, setQuietHoursStart] = useState(0);
     const [quietHoursEnd, setQuietHoursEnd] = useState(480);
     const [messageEditor, setMessageEditor] = useState({ visible: false, messageIndex: -1, draftBody: '', draftRule: null });
+    const [taskEditor, setTaskEditor] = useState({
+        visible: false,
+        taskId: null,
+        draftName: '',
+        draftNotes: '',
+        creationTime: null,
+        completedAt: null,
+    });
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -118,6 +126,7 @@ function Homepage(props){
         reorderTasksInList,
         removeTaskFromListByIndex,
         updateTaskInList,
+        moveTaskFromList,
         completeTaskInListByIndex,
     } = useListTasks(currentList);
 
@@ -337,6 +346,48 @@ function Homepage(props){
         handleCloseMessageEditor();
         await persistAndReschedule(next);
     }, [messageEditor, currentMessages, persistAndReschedule, handleCloseMessageEditor]);
+
+    const handleOpenTaskEditor = useCallback((task) => {
+        if (!task) return;
+        tapLight();
+        setTaskEditor({
+            visible: true,
+            taskId: task.id,
+            draftName: task.taskName ?? '',
+            draftNotes: task.notes ?? '',
+            creationTime: task.creationTime ?? null,
+            completedAt: task.completedAt ?? null,
+        });
+    }, []);
+
+    const handleCloseTaskEditor = useCallback(() => {
+        setTaskEditor((r) => ({ ...r, visible: false }));
+    }, []);
+
+    const handleSaveTask = useCallback(() => {
+        const { taskId, draftName, draftNotes } = taskEditor;
+        if (!taskId) {
+            handleCloseTaskEditor();
+            return;
+        }
+        const trimmed = (draftName ?? '').trim();
+        if (!trimmed) return;
+        tapLight();
+        updateTaskInList(taskId, { taskName: trimmed, notes: draftNotes ?? '' });
+        handleCloseTaskEditor();
+    }, [taskEditor, updateTaskInList, handleCloseTaskEditor]);
+
+    const handleMoveTaskTo = useCallback((toListName) => {
+        const { taskId, draftName, draftNotes } = taskEditor;
+        if (!taskId || !toListName || toListName === currentList) return;
+        selection();
+        const trimmed = (draftName ?? '').trim();
+        if (trimmed) {
+            updateTaskInList(taskId, { taskName: trimmed, notes: draftNotes ?? '' });
+        }
+        moveTaskFromList(toListName, taskId);
+        handleCloseTaskEditor();
+    }, [taskEditor, currentList, updateTaskInList, moveTaskFromList, handleCloseTaskEditor]);
 
     const handleOpenScheduled = useCallback(async () => {
         tapLight();
@@ -833,6 +884,112 @@ function Homepage(props){
                     </Modal>
                     </Modal>
 
+                    <Modal visible={taskEditor.visible} animationType="slide" transparent={true}>
+                        <SafeAreaView style={{ flex: 1 }}>
+                            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+                                <GlassCard
+                                    style={styles.modalContent}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <Text style={styles.settingsTitle}>Edit task</Text>
+
+                                    <Text style={styles.ruleSectionLabel}>Name</Text>
+                                    <TextInput
+                                        style={styles.taskEditorNameInput}
+                                        value={taskEditor.draftName}
+                                        onChangeText={(text) =>
+                                            setTaskEditor((r) => ({ ...r, draftName: text }))
+                                        }
+                                        placeholder="Task name"
+                                        placeholderTextColor="rgba(255,255,255,0.5)"
+                                        returnKeyType="done"
+                                    />
+
+                                    <Text style={styles.ruleSectionLabel}>Notes</Text>
+                                    <TextInput
+                                        style={styles.messageEditorInput}
+                                        value={taskEditor.draftNotes}
+                                        onChangeText={(text) =>
+                                            setTaskEditor((r) => ({ ...r, draftNotes: text }))
+                                        }
+                                        placeholder="Optional notes"
+                                        placeholderTextColor="rgba(255,255,255,0.5)"
+                                        multiline
+                                    />
+
+                                    {(taskEditor.creationTime || taskEditor.completedAt) ? (
+                                        <View style={styles.taskEditorMeta}>
+                                            {taskEditor.creationTime ? (
+                                                <Text style={styles.taskEditorMetaText}>
+                                                    Added {moment(taskEditor.creationTime).fromNow()}
+                                                </Text>
+                                            ) : null}
+                                            {taskEditor.completedAt ? (
+                                                <Text style={styles.taskEditorMetaText}>
+                                                    Last completed {moment(taskEditor.completedAt).fromNow()}
+                                                </Text>
+                                            ) : null}
+                                        </View>
+                                    ) : null}
+
+                                    {(() => {
+                                        const others = (currentMainData?.sideLists ?? []).filter(
+                                            (s) => s.listName !== currentList
+                                        );
+                                        if (others.length === 0) return null;
+                                        return (
+                                            <>
+                                                <Text style={styles.ruleSectionLabel}>Move to</Text>
+                                                <FlatList
+                                                    data={others}
+                                                    keyExtractor={(s) => s.listName}
+                                                    renderItem={({ item }) => (
+                                                        <TouchableOpacity
+                                                            style={styles.rulePickerRow}
+                                                            onPress={() => handleMoveTaskTo(item.listName)}
+                                                        >
+                                                            <Text style={styles.rulePickerText} numberOfLines={1}>
+                                                                {item.listName}
+                                                            </Text>
+                                                            <SymbolView
+                                                                name="arrow.right.circle.fill"
+                                                                size={22}
+                                                                tintColor="rgba(255,255,255,0.6)"
+                                                            />
+                                                        </TouchableOpacity>
+                                                    )}
+                                                />
+                                            </>
+                                        );
+                                    })()}
+                                </GlassCard>
+
+                                <GlassCard
+                                    style={styles.buttonWrapper}
+                                    colorScheme="dark"
+                                    tintColor="rgba(46, 46, 80, 0.45)"
+                                >
+                                    <TouchableOpacity onPress={handleCloseTaskEditor}>
+                                        <SymbolView name="xmark.circle.fill" size={60} tintColor="white" />
+                                    </TouchableOpacity>
+                                    {(() => {
+                                        const canSave = (taskEditor.draftName ?? '').trim().length > 0;
+                                        return (
+                                            <TouchableOpacity
+                                                onPress={handleSaveTask}
+                                                disabled={!canSave}
+                                                style={!canSave && { opacity: 0.4 }}
+                                            >
+                                                <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                            </TouchableOpacity>
+                                        );
+                                    })()}
+                                </GlassCard>
+                            </KeyboardAvoidingView>
+                        </SafeAreaView>
+                    </Modal>
+
                     <Modal visible={scheduledModalVisible} animationType="slide" transparent={true}>
                         <SafeAreaView style={{ flex: 1 }}>
                             <GlassCard
@@ -1006,6 +1163,7 @@ function Homepage(props){
                                 onRemove={removeTaskFromListByIndex}
                                 onComplete={completeTaskInListByIndex}
                                 onUpdate={updateTaskInList}
+                                onPress={() => handleOpenTaskEditor(item)}
                             />
                         )}
                         ListEmptyComponent={
@@ -1260,6 +1418,26 @@ const styles = StyleSheet.create({
         marginHorizontal: 16,
         marginBottom: 12,
         minHeight: 44,
+    },
+    taskEditorNameInput: {
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginHorizontal: 16,
+        marginBottom: 12,
+    },
+    taskEditorMeta: {
+        marginHorizontal: 16,
+        marginTop: 4,
+        marginBottom: 12,
+        gap: 4,
+    },
+    taskEditorMetaText: {
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: 12,
     },
     ruleHelpText: {
         color: 'rgba(255,255,255,0.7)',

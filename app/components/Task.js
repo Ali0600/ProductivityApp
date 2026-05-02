@@ -51,7 +51,7 @@ const LeftAction = ({ progress, onPress }) => {
     );
 };
 
-const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate }) => {
+const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdate, onPress }) => {
     const swipeableRef = useRef(null);
 
     const closeSwipe = () => {
@@ -159,6 +159,7 @@ const Task = ({ text, creationTime, index, taskId, onRemove, onComplete, onUpdat
             >
                 <TouchableOpacity
                     style={styles.taskContainer}
+                    onPress={onPress}
                     onLongPress={handleEdit}
                     delayLongPress={500}
                 >

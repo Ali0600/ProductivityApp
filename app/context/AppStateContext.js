@@ -206,6 +206,37 @@ export const AppStateProvider = ({ children }) => {
     [currentMainList, mutateSideList]
   );
 
+  const moveTask = useCallback(
+    (fromListName, toListName, taskId) => {
+      if (!currentMainList || !fromListName || !toListName) return;
+      if (fromListName === toListName) return;
+      let nextMainLists = null;
+      setMainLists((prev) => {
+        nextMainLists = prev.map((ml) => {
+          if (ml.name !== currentMainList) return ml;
+          const fromList = ml.sideLists.find((sl) => sl.listName === fromListName);
+          const task = fromList?.tasks.find((t) => t.id === taskId);
+          if (!task) return ml;
+          return {
+            ...ml,
+            sideLists: ml.sideLists.map((sl) => {
+              if (sl.listName === fromListName) {
+                return { ...sl, tasks: sl.tasks.filter((t) => t.id !== taskId) };
+              }
+              if (sl.listName === toListName) {
+                return { ...sl, tasks: [...sl.tasks, task] };
+              }
+              return sl;
+            }),
+          };
+        });
+        return nextMainLists;
+      });
+      rescheduleIfSource(nextMainLists);
+    },
+    [currentMainList, rescheduleIfSource]
+  );
+
   // --- Side list ops (scoped to currentMainList) ---
   const addList = useCallback(
     (sideListName) => {
@@ -411,6 +442,7 @@ export const AppStateProvider = ({ children }) => {
       removeTaskByIndex,
       updateTask,
       reorderTasks,
+      moveTask,
       completeTask,
       completeTaskByIndex,
       isLoading,
@@ -440,6 +472,7 @@ export const AppStateProvider = ({ children }) => {
       removeTaskByIndex,
       updateTask,
       reorderTasks,
+      moveTask,
       completeTask,
       completeTaskByIndex,
       isLoading,
