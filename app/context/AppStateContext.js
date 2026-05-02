@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageService from '../services/storageService';
+import NotificationService from '../services/notificationService';
 
 export const AppStateContext = createContext();
 
@@ -38,7 +39,14 @@ export const AppStateProvider = ({ children }) => {
 
         const loadedMain = await StorageService.getMainLists();
         if (loadedMain !== null && Array.isArray(loadedMain)) {
-          setMainLists(loadedMain);
+          const migrated = loadedMain.map((ml) => {
+            const msgs = Array.isArray(ml.notificationMessages) ? ml.notificationMessages : [];
+            const normalized = msgs.map((m) =>
+              typeof m === 'string' ? { body: m, rule: null } : m
+            );
+            return { ...ml, notificationMessages: normalized };
+          });
+          setMainLists(migrated);
         } else {
           const defaults = createDefaultMainLists();
           setMainLists(defaults);
@@ -124,35 +132,70 @@ export const AppStateProvider = ({ children }) => {
     [currentMainList, mutateSideList]
   );
 
+  const rescheduleIfSource = useCallback(async (nextMainLists) => {
+    const source = await NotificationService.getNotificationSource();
+    if (!source || source !== currentMainList || !nextMainLists) return;
+    const sourceData = nextMainLists.find((ml) => ml.name === source);
+    if (!sourceData) return;
+    await NotificationService.scheduleRecurringNotifications({
+      sourceName: source,
+      sourceMainList: sourceData,
+    });
+  }, [currentMainList]);
+
   const completeTaskByIndex = useCallback(
     (listName, idx) => {
       if (!currentMainList) return;
-      mutateSideList(currentMainList, listName, (sl) => {
-        if (idx < 0 || idx >= sl.tasks.length) return sl;
-        const next = [...sl.tasks];
-        const done = { ...next[idx], creationTime: new Date() };
-        next.splice(idx, 1);
-        next.push(done);
-        return { ...sl, tasks: next, lastCompletedAt: new Date() };
+      let nextMainLists = null;
+      setMainLists((prev) => {
+        nextMainLists = prev.map((ml) => {
+          if (ml.name !== currentMainList) return ml;
+          return {
+            ...ml,
+            sideLists: ml.sideLists.map((sl) => {
+              if (sl.listName !== listName) return sl;
+              if (idx < 0 || idx >= sl.tasks.length) return sl;
+              const next = [...sl.tasks];
+              const done = { ...next[idx], completedAt: new Date() };
+              next.splice(idx, 1);
+              next.push(done);
+              return { ...sl, tasks: next, lastCompletedAt: new Date() };
+            }),
+          };
+        });
+        return nextMainLists;
       });
+      rescheduleIfSource(nextMainLists);
     },
-    [currentMainList, mutateSideList]
+    [currentMainList, rescheduleIfSource]
   );
 
   const completeTask = useCallback(
     (listName, taskId) => {
       if (!currentMainList) return;
-      mutateSideList(currentMainList, listName, (sl) => {
-        const idx = sl.tasks.findIndex((t) => t.id === taskId);
-        if (idx === -1) return sl;
-        const next = [...sl.tasks];
-        const done = { ...next[idx], creationTime: new Date() };
-        next.splice(idx, 1);
-        next.push(done);
-        return { ...sl, tasks: next, lastCompletedAt: new Date() };
+      let nextMainLists = null;
+      setMainLists((prev) => {
+        nextMainLists = prev.map((ml) => {
+          if (ml.name !== currentMainList) return ml;
+          return {
+            ...ml,
+            sideLists: ml.sideLists.map((sl) => {
+              if (sl.listName !== listName) return sl;
+              const idx = sl.tasks.findIndex((t) => t.id === taskId);
+              if (idx === -1) return sl;
+              const next = [...sl.tasks];
+              const done = { ...next[idx], completedAt: new Date() };
+              next.splice(idx, 1);
+              next.push(done);
+              return { ...sl, tasks: next, lastCompletedAt: new Date() };
+            }),
+          };
+        });
+        return nextMainLists;
       });
+      rescheduleIfSource(nextMainLists);
     },
-    [currentMainList, mutateSideList]
+    [currentMainList, rescheduleIfSource]
   );
 
   const reorderTasks = useCallback(
@@ -259,30 +302,58 @@ export const AppStateProvider = ({ children }) => {
         {
           name,
           sideLists: [{ listName: 'Tasks', tasks: [], lastCompletedAt: null }],
+          notificationMessages: [],
+          notificationIntervalMinutes: 60,
         },
       ];
     });
   }, []);
 
+  const setNotificationMessages = useCallback((mainListName, messages) => {
+    setMainLists((prev) =>
+      prev.map((ml) =>
+        ml.name === mainListName ? { ...ml, notificationMessages: messages } : ml
+      )
+    );
+  }, []);
+
+  const setNotificationInterval = useCallback((mainListName, minutes) => {
+    setMainLists((prev) =>
+      prev.map((ml) =>
+        ml.name === mainListName ? { ...ml, notificationIntervalMinutes: minutes } : ml
+      )
+    );
+  }, []);
+
   const removeMainList = useCallback(
-    (name) => {
+    async (name) => {
       setMainLists((prev) => prev.filter((ml) => ml.name !== name));
       if (currentMainList === name) {
         setCurrentMainList('');
         setCurrentSideList('');
+      }
+      const source = await NotificationService.getNotificationSource();
+      if (source === name) {
+        await NotificationService.setNotificationSource(null);
+        await NotificationService.scheduleRecurringNotifications();
       }
     },
     [currentMainList]
   );
 
   const renameMainList = useCallback(
-    (oldName, newName) => {
+    async (oldName, newName) => {
       if (!newName || oldName === newName) return;
       setMainLists((prev) => {
         if (prev.some((ml) => ml.name === newName)) return prev;
         return prev.map((ml) => (ml.name === oldName ? { ...ml, name: newName } : ml));
       });
       if (currentMainList === oldName) setCurrentMainList(newName);
+      const source = await NotificationService.getNotificationSource();
+      if (source === oldName) {
+        await NotificationService.setNotificationSource(newName);
+        await NotificationService.scheduleRecurringNotifications();
+      }
     },
     [currentMainList]
   );
@@ -325,6 +396,8 @@ export const AppStateProvider = ({ children }) => {
       renameMainList,
       switchMainList,
       exitToTileGrid,
+      setNotificationMessages,
+      setNotificationInterval,
       lists,
       currentList,
       currentListData,
@@ -352,6 +425,8 @@ export const AppStateProvider = ({ children }) => {
       renameMainList,
       switchMainList,
       exitToTileGrid,
+      setNotificationMessages,
+      setNotificationInterval,
       lists,
       currentList,
       currentListData,

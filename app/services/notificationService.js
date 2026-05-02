@@ -13,11 +13,85 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const isInQuietHours = (date, startMin, endMin) => {
+  if (startMin === endMin) return false;
+  const minOfDay = date.getHours() * 60 + date.getMinutes();
+  if (startMin < endMin) {
+    return minOfDay >= startMin && minOfDay < endMin;
+  }
+  return minOfDay >= startMin || minOfDay < endMin;
+};
+
+const startOfDayMs = (d) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.getTime();
+};
+
+const isRuleActive = (rule, sourceMainList, triggerDate) => {
+  if (!rule || !sourceMainList) return false;
+  const dayStart = startOfDayMs(triggerDate);
+  const dayEnd = triggerDate.getTime();
+  const hitWindow = (ts) => {
+    const t = ts ? new Date(ts).getTime() : 0;
+    return t >= dayStart && t < dayEnd;
+  };
+  if (rule.type === 'task') {
+    const sl = sourceMainList.sideLists?.find((s) => s.listName === rule.sideListName);
+    const task = sl?.tasks?.find((t) => t.id === rule.taskId);
+    return hitWindow(task?.completedAt);
+  }
+  if (rule.type === 'sideList') {
+    const sl = sourceMainList.sideLists?.find((s) => s.listName === rule.sideListName);
+    return hitWindow(sl?.lastCompletedAt);
+  }
+  if (rule.type === 'mainList') {
+    return (sourceMainList.sideLists ?? []).some((sl) => hitWindow(sl.lastCompletedAt));
+  }
+  return false;
+};
+
 export default class NotificationService {
-  static NOTIFICATION_ID_KEY = 'taskReminderNotificationId';
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
   static NOTIFICATIONS_ENABLED_KEY = 'notificationsEnabled';
+  static NOTIFICATION_SOURCE_KEY = 'notificationSourceMainList';
+  static QUIET_HOURS_ENABLED_KEY = 'quietHoursEnabled';
+  static QUIET_HOURS_START_KEY = 'quietHoursStartMinutes';
+  static QUIET_HOURS_END_KEY = 'quietHoursEndMinutes';
   static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
+
+  static async setNotificationSource(mainListName) {
+    if (mainListName) {
+      await AsyncStorage.setItem(this.NOTIFICATION_SOURCE_KEY, mainListName);
+    } else {
+      await AsyncStorage.removeItem(this.NOTIFICATION_SOURCE_KEY);
+    }
+  }
+
+  static async getNotificationSource() {
+    return await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
+  }
+
+  static async getQuietHours() {
+    const [enabledRaw, startRaw, endRaw] = await Promise.all([
+      AsyncStorage.getItem(this.QUIET_HOURS_ENABLED_KEY),
+      AsyncStorage.getItem(this.QUIET_HOURS_START_KEY),
+      AsyncStorage.getItem(this.QUIET_HOURS_END_KEY),
+    ]);
+    return {
+      enabled: enabledRaw === 'true',
+      startMinutes: startRaw != null ? parseInt(startRaw, 10) : 0,
+      endMinutes: endRaw != null ? parseInt(endRaw, 10) : 480,
+    };
+  }
+
+  static async setQuietHours({ enabled, startMinutes, endMinutes }) {
+    await AsyncStorage.multiSet([
+      [this.QUIET_HOURS_ENABLED_KEY, enabled ? 'true' : 'false'],
+      [this.QUIET_HOURS_START_KEY, String(startMinutes)],
+      [this.QUIET_HOURS_END_KEY, String(endMinutes)],
+    ]);
+  }
 
   static async getNotificationsEnabled() {
     try {
@@ -36,9 +110,8 @@ export default class NotificationService {
       if (enabled) {
         await this.scheduleRecurringNotifications();
       } else {
-        await this.cancelRecurringNotifications();
-        await this.cancelAllNotifications();
-        await this.cancelTaskReminder();
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
       }
       return true;
     } catch (error) {
@@ -153,230 +226,6 @@ export default class NotificationService {
   }
 
   /**
-   * Save reminder hours setting
-   * @param {string} hours - Hours between reminders, '0' to disable
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async saveReminderHours(hours) {
-    try {
-      console.log(`Saving reminder hours: ${hours}`);
-      await AsyncStorage.setItem(this.REMINDER_HOURS_KEY, hours);
-      
-      // Update the scheduled notification
-      await this.scheduleTaskReminder();
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving reminder hours:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get saved reminder hours
-   * @returns {Promise<string>} - Hours between reminders, '0' if disabled
-   */
-  static async getReminderHours() {
-    try {
-      const hours = await AsyncStorage.getItem(this.REMINDER_HOURS_KEY);
-      return hours ?? '0';
-    } catch (error) {
-      console.error('Error getting reminder hours:', error);
-      return '0';
-    }
-  }
-
-  /**
-   * Schedule hourly notifications from 8am to 10pm
-   * @param {boolean} debugMode - If true, sends notifications every minute instead of hourly
-   * @returns {Promise<string[]>} - Array of notification IDs
-   */
-  static async scheduleHourlyNotifications(debugMode = false) {
-    try {
-      // Cancel any existing reminders
-      await this.cancelAllNotifications();
-      
-      const notificationIds = [];
-      
-      if (debugMode) {
-        // Debug mode: send notification every minute for testing
-        console.log('Debug mode: scheduling notification every minute');
-        
-        // First send an immediate notification to test
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'DEBUG: Immediate Test',
-            body: 'If you see this, notifications are working',
-            sound: true,
-          },
-          trigger: null,
-        });
-        
-        // Then schedule repeating notifications
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Time to be productive! (DEBUG)',
-            body: 'Finish a Task - Debug Mode',
-            sound: true,
-            data: {
-              type: 'task_reminder',
-              mode: 'debug',
-              timestamp: Date.now(),
-            },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: 60, // Every minute
-            repeats: true,
-          },
-        });
-        
-        notificationIds.push(notificationId);
-        console.log(`Scheduled debug notification every minute with ID: ${notificationId}`);
-      } else {
-        // Normal mode: schedule notifications for each hour from 8am to 10pm
-        for (let hour = 8; hour <= 22; hour++) {
-          const notificationId = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: 'Time to be productive!',
-              body: 'Finish a Task',
-              sound: true,
-              data: {
-                type: 'task_reminder',
-                mode: 'hourly',
-                hour: hour,
-                timestamp: Date.now(),
-              },
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DAILY,
-              hour: hour,
-              minute: 0,
-            },
-          });
-          
-          notificationIds.push(notificationId);
-          console.log(`Scheduled notification for ${hour}:00 with ID: ${notificationId}`);
-        }
-      }
-      
-      // Save all notification IDs
-      await AsyncStorage.setItem('hourlyNotificationIds', JSON.stringify(notificationIds));
-      
-      const modeText = debugMode ? 'debug (every minute)' : 'hourly (8am to 10pm)';
-      console.log(`Scheduled ${notificationIds.length} ${modeText} notifications`);
-      return notificationIds;
-    } catch (error) {
-      console.error('Error scheduling hourly notifications:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Cancel all hourly notifications
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async cancelAllNotifications() {
-    try {
-      // Cancel the old task reminder
-      await this.cancelTaskReminder();
-      
-      // Cancel hourly notifications
-      const savedIds = await AsyncStorage.getItem('hourlyNotificationIds');
-      if (savedIds) {
-        const notificationIds = JSON.parse(savedIds);
-        for (const id of notificationIds) {
-          await Notifications.cancelScheduledNotificationAsync(id);
-          console.log(`Cancelled notification with ID: ${id}`);
-        }
-        await AsyncStorage.removeItem('hourlyNotificationIds');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error cancelling all notifications:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Schedule a recurring task reminder notification
-   * @returns {Promise<string|null>} - Notification ID or null if disabled/failed
-   */
-  static async scheduleTaskReminder() {
-    try {
-      // Cancel any existing reminders
-      await this.cancelTaskReminder();
-      
-      // Get the reminder hours
-      const hours = await this.getReminderHours();
-      const hoursNum = parseInt(hours);
-      
-      // If hours is 0, don't schedule any reminders
-      if (hoursNum <= 0) {
-        console.log('Task reminders disabled (0 hours)');
-        return null;
-      }
-      
-      // Schedule a new reminder
-      console.log(`Scheduling task reminder every ${hours} hours`);
-      
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Time to be productive!',
-          body: 'Finish a Task',
-          sound: true,
-          data: {
-            type: 'task_reminder',
-            mode: 'custom',
-            hours: hoursNum,
-            timestamp: Date.now(),
-          },
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: hoursNum * 60 * 60, // Convert hours to seconds
-          repeats: true,
-        },
-      });
-      
-      // Save the notification ID so we can cancel it later
-      await AsyncStorage.setItem(this.NOTIFICATION_ID_KEY, notificationId);
-      
-      console.log(`Scheduled task reminder with ID: ${notificationId}`);
-      return notificationId;
-    } catch (error) {
-      console.error('Error scheduling task reminder:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Cancel the recurring task reminder
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async cancelTaskReminder() {
-    try {
-      // Get the saved notification ID
-      const notificationId = await AsyncStorage.getItem(this.NOTIFICATION_ID_KEY);
-      
-      if (notificationId) {
-        // Cancel the notification
-        console.log(`Cancelling task reminder with ID: ${notificationId}`);
-        await Notifications.cancelScheduledNotificationAsync(notificationId);
-        
-        // Clear the saved notification ID
-        await AsyncStorage.removeItem(this.NOTIFICATION_ID_KEY);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error cancelling task reminder:', error);
-      return false;
-    }
-  }
-
-  /**
    * Send an immediate notification
    * @param {string} title - Notification title
    * @param {string} body - Notification body
@@ -400,119 +249,131 @@ export default class NotificationService {
     }
   }
 
-  /**
-   * Schedule multiple recurring notifications (every minute for 60 minutes)
-   * @returns {Promise<string[]>} - Array of notification IDs
-   */
-  static async scheduleRecurringNotifications() {
+  static async getUpcomingNotifications() {
     try {
-      // Cancel any existing recurring notifications
-      await this.cancelRecurringNotifications();
-      
-      const notificationIds = [];
-      
-      // Schedule recurring notifications using Date objects (WORKING SOLUTION)
-      console.log('Current time:', new Date().toLocaleString());
-      const startTime = Date.now() + 3600000; // Start 1 hour from now
-      
-      for (let i = 1; i <= this.MAX_SCHEDULED_NOTIFICATIONS; i++) {
-        const triggerDate = new Date(startTime + ((i - 1) * 3600000)); // Each hour after start
-        
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Productivity Reminder',
-            body: `Be productive! This is reminder!`,
-            sound: true,
-            data: {
-              type: 'recurring_reminder',
-              sequence: i,
-              scheduledFor: triggerDate.getTime(),
-            },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: triggerDate,
-          },
-        });
-        
-        notificationIds.push(notificationId);
-        
-        if (i <= 3) { // Log first 3 for debugging
-          console.log(`Scheduled notification ${i} for ${triggerDate.toLocaleString()}`);
-        }
-      }
-      
-      // Save the notification IDs
-      await AsyncStorage.setItem(
-        this.RECURRING_NOTIFICATIONS_KEY, 
-        JSON.stringify(notificationIds)
-      );
-      
-      console.log(`Scheduled ${notificationIds.length} recurring notifications starting in 1 hour`);
-      return notificationIds;
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const formatted = scheduled.map((n) => {
+        const data = n.content?.data ?? {};
+        const trigger = n.trigger ?? {};
+        const fireMs =
+          data.scheduledFor ??
+          trigger.value ??
+          (trigger.date ? new Date(trigger.date).getTime() : null);
+        return {
+          id: n.identifier,
+          title: n.content?.title ?? '',
+          body: n.content?.body ?? '',
+          fireTime: fireMs ? new Date(fireMs) : null,
+          sequence: data.sequence ?? null,
+          type: data.type ?? 'unknown',
+        };
+      });
+      return formatted
+        .filter((n) => n.fireTime != null)
+        .sort((a, b) => a.fireTime.getTime() - b.fireTime.getTime());
     } catch (error) {
-      console.error('Error scheduling recurring notifications:', error);
+      console.error('Error fetching upcoming notifications:', error);
       return [];
     }
   }
 
   /**
-   * Cancel all recurring notifications
-   * @returns {Promise<boolean>} - Success status
+   * Schedule multiple recurring notifications (every minute for 60 minutes)
+   * @returns {Promise<string[]>} - Array of notification IDs
    */
-  static async cancelRecurringNotifications() {
+  static async scheduleRecurringNotifications(opts = {}) {
     try {
-      // Get saved notification IDs
-      const savedIds = await AsyncStorage.getItem(this.RECURRING_NOTIFICATIONS_KEY);
-      
-      if (savedIds) {
-        const notificationIds = JSON.parse(savedIds);
-        console.log(`Cancelling ${notificationIds.length} recurring notifications`);
-        
-        // Cancel all notifications
-        await Promise.all(
-          notificationIds.map(id => Notifications.cancelScheduledNotificationAsync(id))
-        );
-        
-        // Clear saved IDs
-        await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error cancelling recurring notifications:', error);
-      return false;
-    }
-  }
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
 
-  /**
-   * Check how many notifications are still scheduled and reschedule if needed
-   * @param {number} threshold - Minimum number of notifications to maintain
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async maintainRecurringNotifications(threshold = 10) {
-    try {
-      // Get all scheduled notifications
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      
-      // Filter for our recurring notifications
-      const recurringNotifications = scheduledNotifications.filter(
-        notification => notification.content.data?.type === 'recurring_reminder'
-      );
-      
-      console.log(`Currently have ${recurringNotifications.length} recurring notifications scheduled`);
-      
-      // If we're below threshold, reschedule
-      if (recurringNotifications.length < threshold) {
-        console.log(`Below threshold of ${threshold}, rescheduling notifications`);
-        await this.scheduleRecurringNotifications();
-        return true;
+      let { sourceName, messages, intervalMinutes, sourceMainList } = opts;
+
+      if (sourceName === undefined) {
+        sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
       }
-      
-      return false;
+      if (!sourceName) {
+        console.log('No notification source main list set; skipping schedule.');
+        return [];
+      }
+
+      if (sourceMainList === undefined || messages === undefined || intervalMinutes === undefined) {
+        const stored = await AsyncStorage.getItem('mainLists');
+        const mainLists = stored ? JSON.parse(stored) : [];
+        const found = mainLists.find((ml) => ml.name === sourceName);
+        if (sourceMainList === undefined) sourceMainList = found;
+        if (messages === undefined) messages = found?.notificationMessages ?? [];
+        if (intervalMinutes === undefined) intervalMinutes = found?.notificationIntervalMinutes ?? 60;
+      }
+
+      if (messages.length === 0) {
+        console.log(`Source list "${sourceName}" has no messages; skipping.`);
+        return [];
+      }
+
+      const quiet = await this.getQuietHours();
+      const intervalMs = intervalMinutes * 60 * 1000;
+      const MAX_CANDIDATES = 200;
+      const baseTime = Date.now();
+
+      const tasks = [];
+      let scheduled = 0;
+      let candidate = 0;
+      while (scheduled < this.MAX_SCHEDULED_NOTIFICATIONS && candidate < MAX_CANDIDATES) {
+        candidate += 1;
+        const triggerDate = new Date(baseTime + candidate * intervalMs);
+
+        if (quiet.enabled && isInQuietHours(triggerDate, quiet.startMinutes, quiet.endMinutes)) {
+          continue;
+        }
+
+        let pickedBody = null;
+        for (let attempt = 0; attempt < messages.length; attempt++) {
+          const m = messages[(scheduled + attempt) % messages.length];
+          const body = typeof m === 'string' ? m : m?.body;
+          const rule = typeof m === 'string' ? null : m?.rule;
+          if (!body) continue;
+          if (!isRuleActive(rule, sourceMainList, triggerDate)) {
+            pickedBody = body;
+            break;
+          }
+        }
+        if (!pickedBody) continue;
+
+        const sequence = scheduled + 1;
+        tasks.push(
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Productivity Reminder',
+              body: pickedBody,
+              sound: true,
+              data: {
+                type: 'recurring_reminder',
+                sequence,
+                scheduledFor: triggerDate.getTime(),
+                sourceMainList: sourceName,
+              },
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: triggerDate,
+            },
+          })
+        );
+        scheduled += 1;
+      }
+
+      const notificationIds = await Promise.all(tasks);
+      await AsyncStorage.setItem(
+        this.RECURRING_NOTIFICATIONS_KEY,
+        JSON.stringify(notificationIds)
+      );
+
+      const quietLabel = quiet.enabled ? `${quiet.startMinutes}–${quiet.endMinutes}` : 'off';
+      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling, every ${intervalMinutes}min, quiet=${quietLabel}).`);
+      return notificationIds;
     } catch (error) {
-      console.error('Error maintaining recurring notifications:', error);
-      return false;
+      console.error('Error scheduling recurring notifications:', error);
+      return [];
     }
   }
 
