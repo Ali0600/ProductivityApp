@@ -39,7 +39,14 @@ export const AppStateProvider = ({ children }) => {
 
         const loadedMain = await StorageService.getMainLists();
         if (loadedMain !== null && Array.isArray(loadedMain)) {
-          setMainLists(loadedMain);
+          const migrated = loadedMain.map((ml) => {
+            const msgs = Array.isArray(ml.notificationMessages) ? ml.notificationMessages : [];
+            const normalized = msgs.map((m) =>
+              typeof m === 'string' ? { body: m, rule: null } : m
+            );
+            return { ...ml, notificationMessages: normalized };
+          });
+          setMainLists(migrated);
         } else {
           const defaults = createDefaultMainLists();
           setMainLists(defaults);
@@ -131,7 +138,7 @@ export const AppStateProvider = ({ children }) => {
       mutateSideList(currentMainList, listName, (sl) => {
         if (idx < 0 || idx >= sl.tasks.length) return sl;
         const next = [...sl.tasks];
-        const done = { ...next[idx], creationTime: new Date() };
+        const done = { ...next[idx], completedAt: new Date() };
         next.splice(idx, 1);
         next.push(done);
         return { ...sl, tasks: next, lastCompletedAt: new Date() };
@@ -147,7 +154,7 @@ export const AppStateProvider = ({ children }) => {
         const idx = sl.tasks.findIndex((t) => t.id === taskId);
         if (idx === -1) return sl;
         const next = [...sl.tasks];
-        const done = { ...next[idx], creationTime: new Date() };
+        const done = { ...next[idx], completedAt: new Date() };
         next.splice(idx, 1);
         next.push(done);
         return { ...sl, tasks: next, lastCompletedAt: new Date() };

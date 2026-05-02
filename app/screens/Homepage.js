@@ -716,7 +716,7 @@ function Homepage(props){
                                 text={item.taskName}
                                 index={index}
                                 taskId={item.id || `task-${currentList}-${index}`}
-                                creationTime={moment(item.creationTime).fromNow()}
+                                creationTime={moment(item.completedAt ?? item.creationTime).fromNow()}
                                 onRemove={removeTaskFromListByIndex}
                                 onComplete={completeTaskInListByIndex}
                                 onUpdate={updateTaskInList}
