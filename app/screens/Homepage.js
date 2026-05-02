@@ -592,6 +592,7 @@ function Homepage(props){
                                     How often "{currentMainList}" sends reminders.
                                 </Text>
                                 <IntervalSlider
+                                    key={`interval-${currentInterval}`}
                                     value={currentInterval}
                                     onChangeComplete={handleIntervalChange}
                                 />
