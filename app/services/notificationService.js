@@ -195,40 +195,6 @@ export default class NotificationService {
   }
 
   /**
-   * Save reminder hours setting
-   * @param {string} hours - Hours between reminders, '0' to disable
-   * @returns {Promise<boolean>} - Success status
-   */
-  static async saveReminderHours(hours) {
-    try {
-      console.log(`Saving reminder hours: ${hours}`);
-      await AsyncStorage.setItem(this.REMINDER_HOURS_KEY, hours);
-      
-      // Update the scheduled notification
-      await this.scheduleTaskReminder();
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving reminder hours:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get saved reminder hours
-   * @returns {Promise<string>} - Hours between reminders, '0' if disabled
-   */
-  static async getReminderHours() {
-    try {
-      const hours = await AsyncStorage.getItem(this.REMINDER_HOURS_KEY);
-      return hours ?? '0';
-    } catch (error) {
-      console.error('Error getting reminder hours:', error);
-      return '0';
-    }
-  }
-
-  /**
    * Schedule hourly notifications from 8am to 10pm
    * @param {boolean} debugMode - If true, sends notifications every minute instead of hourly
    * @returns {Promise<string[]>} - Array of notification IDs
