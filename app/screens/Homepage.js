@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ScrollView, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -1012,6 +1012,11 @@ function Homepage(props){
                                     colorScheme="dark"
                                     tintColor="rgba(46, 46, 80, 0.45)"
                                 >
+                                    <ScrollView
+                                        keyboardShouldPersistTaps="handled"
+                                        contentContainerStyle={{ paddingBottom: 16 }}
+                                        showsVerticalScrollIndicator={false}
+                                    >
                                     <Text style={styles.settingsTitle}>Edit task</Text>
 
                                     <Text style={styles.ruleSectionLabel}>Name</Text>
@@ -1143,28 +1148,26 @@ function Homepage(props){
                                         return (
                                             <>
                                                 <Text style={styles.ruleSectionLabel}>Move to</Text>
-                                                <FlatList
-                                                    data={others}
-                                                    keyExtractor={(s) => s.listName}
-                                                    renderItem={({ item }) => (
-                                                        <TouchableOpacity
-                                                            style={styles.rulePickerRow}
-                                                            onPress={() => handleMoveTaskTo(item.listName)}
-                                                        >
-                                                            <Text style={styles.rulePickerText} numberOfLines={1}>
-                                                                {item.listName}
-                                                            </Text>
-                                                            <SymbolView
-                                                                name="arrow.right.circle.fill"
-                                                                size={22}
-                                                                tintColor="rgba(255,255,255,0.6)"
-                                                            />
-                                                        </TouchableOpacity>
-                                                    )}
-                                                />
+                                                {others.map((item) => (
+                                                    <TouchableOpacity
+                                                        key={item.listName}
+                                                        style={styles.rulePickerRow}
+                                                        onPress={() => handleMoveTaskTo(item.listName)}
+                                                    >
+                                                        <Text style={styles.rulePickerText} numberOfLines={1}>
+                                                            {item.listName}
+                                                        </Text>
+                                                        <SymbolView
+                                                            name="arrow.right.circle.fill"
+                                                            size={22}
+                                                            tintColor="rgba(255,255,255,0.6)"
+                                                        />
+                                                    </TouchableOpacity>
+                                                ))}
                                             </>
                                         );
                                     })()}
+                                    </ScrollView>
                                 </GlassCard>
 
                                 <GlassCard
