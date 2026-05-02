@@ -436,6 +436,11 @@ function Homepage(props){
         setTagInputDraft('');
     }, [tagInputDraft]);
 
+    const tagsWithPending = (draftTags) => {
+        const pending = (tagInputDraft ?? '').trim();
+        return pending ? [...(draftTags ?? []), pending] : (draftTags ?? []);
+    };
+
     const handleSaveTask = useCallback(() => {
         const { taskId, draftName, draftNotes, draftVariables, draftTags } = taskEditor;
         if (!taskId) {
@@ -449,10 +454,10 @@ function Homepage(props){
             taskName: trimmed,
             notes: draftNotes ?? '',
             variables: cleanVariables(draftVariables),
-            tags: cleanTags(draftTags),
+            tags: cleanTags(tagsWithPending(draftTags)),
         });
         handleCloseTaskEditor();
-    }, [taskEditor, updateTaskInList, handleCloseTaskEditor]);
+    }, [taskEditor, tagInputDraft, updateTaskInList, handleCloseTaskEditor]);
 
     const handleMoveTaskTo = useCallback((toListName) => {
         const { taskId, draftName, draftNotes, draftVariables, draftTags } = taskEditor;
@@ -464,12 +469,12 @@ function Homepage(props){
                 taskName: trimmed,
                 notes: draftNotes ?? '',
                 variables: cleanVariables(draftVariables),
-                tags: cleanTags(draftTags),
+                tags: cleanTags(tagsWithPending(draftTags)),
             });
         }
         moveTaskFromList(toListName, taskId);
         handleCloseTaskEditor();
-    }, [taskEditor, currentList, updateTaskInList, moveTaskFromList, handleCloseTaskEditor]);
+    }, [taskEditor, tagInputDraft, currentList, updateTaskInList, moveTaskFromList, handleCloseTaskEditor]);
 
     const handleCompleteTask = useCallback((task) => {
         if (!task?.id) return;
@@ -1108,6 +1113,7 @@ function Homepage(props){
                                             onSubmitEditing={addTagFromInput}
                                             returnKeyType="done"
                                             autoCapitalize="none"
+                                            autoCorrect={false}
                                         />
                                         <TouchableOpacity onPress={addTagFromInput}>
                                             <SymbolView name="plus.circle.fill" size={28} tintColor="white" />
