@@ -93,7 +93,7 @@ function Homepage(props){
     const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
     const [quietHoursStart, setQuietHoursStart] = useState(0);
     const [quietHoursEnd, setQuietHoursEnd] = useState(480);
-    const [ruleEditor, setRuleEditor] = useState({ visible: false, messageIndex: -1, draft: null });
+    const [messageEditor, setMessageEditor] = useState({ visible: false, messageIndex: -1, draftBody: '', draftRule: null });
 
     useEffect(() => {
         NotificationService.getNotificationsEnabled().then(setNotificationsEnabled);
@@ -307,35 +307,36 @@ function Homepage(props){
         await persistAndReschedule(currentMessages.filter((_, i) => i !== idx));
     }, [currentMessages, persistAndReschedule]);
 
-    const handleOpenRuleEditor = useCallback((index) => {
+    const handleOpenMessageEditor = useCallback((index) => {
         tapLight();
         const msg = currentMessages[index];
-        const existing = msg && typeof msg === 'object' ? msg.rule ?? null : null;
-        setRuleEditor({ visible: true, messageIndex: index, draft: existing });
+        const body = typeof msg === 'string' ? msg : msg?.body ?? '';
+        const rule = typeof msg === 'string' ? null : msg?.rule ?? null;
+        setMessageEditor({ visible: true, messageIndex: index, draftBody: body, draftRule: rule });
     }, [currentMessages]);
 
-    const handleCloseRuleEditor = useCallback(() => {
-        setRuleEditor({ visible: false, messageIndex: -1, draft: null });
+    const handleCloseMessageEditor = useCallback(() => {
+        setMessageEditor({ visible: false, messageIndex: -1, draftBody: '', draftRule: null });
     }, []);
 
-    const handleSaveRule = useCallback(async () => {
-        tapLight();
-        const { messageIndex, draft } = ruleEditor;
+    const handleSaveMessage = useCallback(async () => {
+        const { messageIndex, draftBody, draftRule } = messageEditor;
         if (messageIndex < 0) {
-            handleCloseRuleEditor();
+            handleCloseMessageEditor();
             return;
         }
-        let cleanDraft = draft;
-        if (draft?.type === 'task' && (!draft.taskId || !draft.sideListName)) cleanDraft = null;
-        else if (draft?.type === 'sideList' && !draft.sideListName) cleanDraft = null;
-        const next = currentMessages.map((m, i) => {
-            if (i !== messageIndex) return m;
-            const body = typeof m === 'string' ? m : m.body;
-            return { body, rule: cleanDraft };
-        });
-        handleCloseRuleEditor();
+        const trimmed = (draftBody ?? '').trim();
+        if (!trimmed) return;
+        tapLight();
+        let cleanRule = draftRule;
+        if (cleanRule?.type === 'task' && (!cleanRule.taskId || !cleanRule.sideListName)) cleanRule = null;
+        else if (cleanRule?.type === 'sideList' && !cleanRule.sideListName) cleanRule = null;
+        const next = currentMessages.map((m, i) =>
+            i === messageIndex ? { body: trimmed, rule: cleanRule } : m
+        );
+        handleCloseMessageEditor();
         await persistAndReschedule(next);
-    }, [ruleEditor, currentMessages, persistAndReschedule, handleCloseRuleEditor]);
+    }, [messageEditor, currentMessages, persistAndReschedule, handleCloseMessageEditor]);
 
     const handleOpenScheduled = useCallback(async () => {
         tapLight();
@@ -598,16 +599,18 @@ function Homepage(props){
                                             ];
                                             return (
                                                 <View style={styles.messageRow}>
-                                                    <View style={styles.messageRowLeft}>
+                                                    <TouchableOpacity
+                                                        style={styles.messageRowLeft}
+                                                        onPress={() => handleOpenMessageEditor(index)}
+                                                        activeOpacity={0.7}
+                                                    >
                                                         <Text style={styles.messageText} numberOfLines={2}>
                                                             {body}
                                                         </Text>
-                                                        <TouchableOpacity onPress={() => handleOpenRuleEditor(index)}>
-                                                            <Text style={chipStyle} numberOfLines={1}>
-                                                                {active ? '● ' : ''}{chip.label}
-                                                            </Text>
-                                                        </TouchableOpacity>
-                                                    </View>
+                                                        <Text style={chipStyle} numberOfLines={1}>
+                                                            {active ? '● ' : ''}{chip.label}
+                                                        </Text>
+                                                    </TouchableOpacity>
                                                     <TouchableOpacity onPress={() => handleDeleteMessage(index)}>
                                                         <SymbolView name="trash.fill" size={22} tintColor="rgba(255,180,180,0.9)" />
                                                     </TouchableOpacity>
@@ -649,15 +652,29 @@ function Homepage(props){
                             </KeyboardAvoidingView>
                         </SafeAreaView>
 
-                    <Modal visible={ruleEditor.visible} animationType="slide" transparent={true}>
+                    <Modal visible={messageEditor.visible} animationType="slide" transparent={true}>
                         <SafeAreaView style={{ flex: 1 }}>
+                            <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                             <GlassCard
                                 style={styles.modalContent}
                                 colorScheme="dark"
                                 tintColor="rgba(46, 46, 80, 0.45)"
                             >
-                                <Text style={styles.settingsTitle}>Pause this message when…</Text>
+                                <Text style={styles.settingsTitle}>Edit message</Text>
 
+                                <Text style={styles.ruleSectionLabel}>Message</Text>
+                                <TextInput
+                                    style={styles.messageEditorInput}
+                                    value={messageEditor.draftBody}
+                                    onChangeText={(text) =>
+                                        setMessageEditor((r) => ({ ...r, draftBody: text }))
+                                    }
+                                    placeholder="Reminder text"
+                                    placeholderTextColor="rgba(255,255,255,0.5)"
+                                    multiline
+                                />
+
+                                <Text style={styles.ruleSectionLabel}>Pause rule</Text>
                                 <View style={styles.ruleSegments}>
                                     {[
                                         { key: 'none', label: 'None' },
@@ -665,16 +682,16 @@ function Homepage(props){
                                         { key: 'sideList', label: 'Side list' },
                                         { key: 'mainList', label: 'Main list' },
                                     ].map((opt) => {
-                                        const active = (ruleEditor.draft?.type ?? 'none') === opt.key;
+                                        const active = (messageEditor.draftRule?.type ?? 'none') === opt.key;
                                         return (
                                             <TouchableOpacity
                                                 key={opt.key}
                                                 style={[styles.ruleSegment, active && styles.ruleSegmentActive]}
                                                 onPress={() => {
                                                     selection();
-                                                    setRuleEditor((r) => ({
+                                                    setMessageEditor((r) => ({
                                                         ...r,
-                                                        draft: opt.key === 'none' ? null : { type: opt.key },
+                                                        draftRule: opt.key === 'none' ? null : { type: opt.key },
                                                     }));
                                                 }}
                                             >
@@ -688,7 +705,7 @@ function Homepage(props){
 
                                 <View style={styles.ruleEditorBody}>
                                     {(() => {
-                                        const draft = ruleEditor.draft;
+                                        const draft = messageEditor.draftRule;
                                         if (!draft) {
                                             return (
                                                 <Text style={styles.ruleHelpText}>
@@ -716,9 +733,9 @@ function Homepage(props){
                                                                 style={styles.rulePickerRow}
                                                                 onPress={() => {
                                                                     selection();
-                                                                    setRuleEditor((r) => ({
+                                                                    setMessageEditor((r) => ({
                                                                         ...r,
-                                                                        draft: { type: 'sideList', sideListName: item.listName },
+                                                                        draftRule: { type: 'sideList', sideListName: item.listName },
                                                                     }));
                                                                 }}
                                                             >
@@ -763,9 +780,9 @@ function Homepage(props){
                                                                 style={styles.rulePickerRow}
                                                                 onPress={() => {
                                                                     selection();
-                                                                    setRuleEditor((r) => ({
+                                                                    setMessageEditor((r) => ({
                                                                         ...r,
-                                                                        draft: {
+                                                                        draftRule: {
                                                                             type: 'task',
                                                                             taskId: item.task.id,
                                                                             sideListName: item.listName,
@@ -798,10 +815,20 @@ function Homepage(props){
                                 colorScheme="dark"
                                 tintColor="rgba(46, 46, 80, 0.45)"
                             >
-                                <TouchableOpacity onPress={handleSaveRule}>
-                                    <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
-                                </TouchableOpacity>
+                                {(() => {
+                                    const canSave = (messageEditor.draftBody ?? '').trim().length > 0;
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={handleSaveMessage}
+                                            disabled={!canSave}
+                                            style={!canSave && { opacity: 0.4 }}
+                                        >
+                                            <SymbolView name="checkmark.circle.fill" size={60} tintColor="white" />
+                                        </TouchableOpacity>
+                                    );
+                                })()}
                             </GlassCard>
+                            </KeyboardAvoidingView>
                         </SafeAreaView>
                     </Modal>
                     </Modal>
@@ -1213,6 +1240,26 @@ const styles = StyleSheet.create({
         flex: 1,
         marginHorizontal: 16,
         marginBottom: 16,
+    },
+    ruleSectionLabel: {
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: 11,
+        textTransform: 'uppercase',
+        letterSpacing: 1.4,
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 8,
+    },
+    messageEditorInput: {
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginHorizontal: 16,
+        marginBottom: 12,
+        minHeight: 44,
     },
     ruleHelpText: {
         color: 'rgba(255,255,255,0.7)',
