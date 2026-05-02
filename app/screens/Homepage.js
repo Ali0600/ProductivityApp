@@ -648,7 +648,6 @@ function Homepage(props){
                                 </GlassCard>
                             </KeyboardAvoidingView>
                         </SafeAreaView>
-                    </Modal>
 
                     <Modal visible={ruleEditor.visible} animationType="slide" transparent={true}>
                         <SafeAreaView style={{ flex: 1 }}>
@@ -804,6 +803,7 @@ function Homepage(props){
                                 </TouchableOpacity>
                             </GlassCard>
                         </SafeAreaView>
+                    </Modal>
                     </Modal>
 
                     <Modal visible={scheduledModalVisible} animationType="slide" transparent={true}>
