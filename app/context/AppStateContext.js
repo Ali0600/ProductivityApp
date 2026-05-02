@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageService from '../services/storageService';
+import NotificationService from '../services/notificationService';
 
 export const AppStateContext = createContext();
 
@@ -283,24 +284,34 @@ export const AppStateProvider = ({ children }) => {
   }, []);
 
   const removeMainList = useCallback(
-    (name) => {
+    async (name) => {
       setMainLists((prev) => prev.filter((ml) => ml.name !== name));
       if (currentMainList === name) {
         setCurrentMainList('');
         setCurrentSideList('');
+      }
+      const source = await NotificationService.getNotificationSource();
+      if (source === name) {
+        await NotificationService.setNotificationSource(null);
+        await NotificationService.scheduleRecurringNotifications();
       }
     },
     [currentMainList]
   );
 
   const renameMainList = useCallback(
-    (oldName, newName) => {
+    async (oldName, newName) => {
       if (!newName || oldName === newName) return;
       setMainLists((prev) => {
         if (prev.some((ml) => ml.name === newName)) return prev;
         return prev.map((ml) => (ml.name === oldName ? { ...ml, name: newName } : ml));
       });
       if (currentMainList === oldName) setCurrentMainList(newName);
+      const source = await NotificationService.getNotificationSource();
+      if (source === oldName) {
+        await NotificationService.setNotificationSource(newName);
+        await NotificationService.scheduleRecurringNotifications();
+      }
     },
     [currentMainList]
   );

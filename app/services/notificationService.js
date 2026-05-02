@@ -40,6 +40,10 @@ export default class NotificationService {
     }
   }
 
+  static async getNotificationSource() {
+    return await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
+  }
+
   static async getQuietHours() {
     const [enabledRaw, startRaw, endRaw] = await Promise.all([
       AsyncStorage.getItem(this.QUIET_HOURS_ENABLED_KEY),
