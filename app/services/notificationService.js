@@ -54,23 +54,10 @@ const isRuleActive = (rule, sourceMainList, triggerDate) => {
 export default class NotificationService {
   static RECURRING_NOTIFICATIONS_KEY = 'recurringNotificationIds';
   static NOTIFICATIONS_ENABLED_KEY = 'notificationsEnabled';
-  static NOTIFICATION_SOURCE_KEY = 'notificationSourceMainList';
   static QUIET_HOURS_ENABLED_KEY = 'quietHoursEnabled';
   static QUIET_HOURS_START_KEY = 'quietHoursStartMinutes';
   static QUIET_HOURS_END_KEY = 'quietHoursEndMinutes';
   static MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS allows up to 64
-
-  static async setNotificationSource(mainListName) {
-    if (mainListName) {
-      await AsyncStorage.setItem(this.NOTIFICATION_SOURCE_KEY, mainListName);
-    } else {
-      await AsyncStorage.removeItem(this.NOTIFICATION_SOURCE_KEY);
-    }
-  }
-
-  static async getNotificationSource() {
-    return await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
-  }
 
   static async getQuietHours() {
     const [enabledRaw, startRaw, endRaw] = await Promise.all([
@@ -108,7 +95,7 @@ export default class NotificationService {
     try {
       await AsyncStorage.setItem(this.NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
       if (enabled) {
-        await this.scheduleRecurringNotifications();
+        await this.scheduleAllMainListsNotifications();
       } else {
         await Notifications.cancelAllScheduledNotificationsAsync();
         await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
@@ -278,101 +265,101 @@ export default class NotificationService {
   }
 
   /**
-   * Schedule multiple recurring notifications (every minute for 60 minutes)
+   * Schedule recurring notifications independently for every main list with messages.
+   * Each list contributes candidates from its own interval and rules; the merged set
+   * is sorted chronologically and capped at MAX_SCHEDULED_NOTIFICATIONS.
    * @returns {Promise<string[]>} - Array of notification IDs
    */
-  static async scheduleRecurringNotifications(opts = {}) {
+  static async scheduleAllMainListsNotifications(opts = {}) {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await AsyncStorage.removeItem(this.RECURRING_NOTIFICATIONS_KEY);
 
-      let { sourceName, messages, intervalMinutes, sourceMainList } = opts;
-
-      if (sourceName === undefined) {
-        sourceName = await AsyncStorage.getItem(this.NOTIFICATION_SOURCE_KEY);
-      }
-      if (!sourceName) {
-        console.log('No notification source main list set; skipping schedule.');
+      const enabled = await this.getNotificationsEnabled();
+      if (!enabled) {
+        console.log('Notifications disabled; not scheduling.');
         return [];
       }
 
-      if (sourceMainList === undefined || messages === undefined || intervalMinutes === undefined) {
+      let { mainLists } = opts;
+      if (!mainLists) {
         const stored = await AsyncStorage.getItem('mainLists');
-        const mainLists = stored ? JSON.parse(stored) : [];
-        const found = mainLists.find((ml) => ml.name === sourceName);
-        if (sourceMainList === undefined) sourceMainList = found;
-        if (messages === undefined) messages = found?.notificationMessages ?? [];
-        if (intervalMinutes === undefined) intervalMinutes = found?.notificationIntervalMinutes ?? 60;
-      }
-
-      if (messages.length === 0) {
-        console.log(`Source list "${sourceName}" has no messages; skipping.`);
-        return [];
+        mainLists = stored ? JSON.parse(stored) : [];
       }
 
       const quiet = await this.getQuietHours();
-      const intervalMs = intervalMinutes * 60 * 1000;
-      const MAX_CANDIDATES = 200;
       const baseTime = Date.now();
+      const MAX_CANDIDATES_PER_LIST = 200;
+      const MAX = this.MAX_SCHEDULED_NOTIFICATIONS;
 
-      const tasks = [];
-      let scheduled = 0;
-      let candidate = 0;
-      while (scheduled < this.MAX_SCHEDULED_NOTIFICATIONS && candidate < MAX_CANDIDATES) {
-        candidate += 1;
-        const triggerDate = new Date(baseTime + candidate * intervalMs);
+      const allCandidates = [];
 
-        if (quiet.enabled && isInQuietHours(triggerDate, quiet.startMinutes, quiet.endMinutes)) {
-          continue;
-        }
+      for (const ml of mainLists) {
+        const messages = Array.isArray(ml.notificationMessages) ? ml.notificationMessages : [];
+        if (messages.length === 0) continue;
+        const intervalMinutes = ml.notificationIntervalMinutes ?? 60;
+        const intervalMs = intervalMinutes * 60 * 1000;
 
-        let pickedBody = null;
-        for (let attempt = 0; attempt < messages.length; attempt++) {
-          const m = messages[(scheduled + attempt) % messages.length];
-          const body = typeof m === 'string' ? m : m?.body;
-          const rule = typeof m === 'string' ? null : m?.rule;
-          if (!body) continue;
-          if (!isRuleActive(rule, sourceMainList, triggerDate)) {
-            pickedBody = body;
-            break;
+        let scheduledFromList = 0;
+        let candidate = 0;
+        while (scheduledFromList < MAX && candidate < MAX_CANDIDATES_PER_LIST) {
+          candidate += 1;
+          const triggerDate = new Date(baseTime + candidate * intervalMs);
+          if (quiet.enabled && isInQuietHours(triggerDate, quiet.startMinutes, quiet.endMinutes)) continue;
+
+          let pickedBody = null;
+          for (let attempt = 0; attempt < messages.length; attempt++) {
+            const m = messages[(scheduledFromList + attempt) % messages.length];
+            const body = typeof m === 'string' ? m : m?.body;
+            const rule = typeof m === 'string' ? null : m?.rule;
+            if (!body) continue;
+            if (!isRuleActive(rule, ml, triggerDate)) {
+              pickedBody = body;
+              break;
+            }
           }
-        }
-        if (!pickedBody) continue;
+          if (!pickedBody) continue;
 
-        const sequence = scheduled + 1;
-        tasks.push(
-          Notifications.scheduleNotificationAsync({
-            content: {
-              title: 'Productivity Reminder',
-              body: pickedBody,
-              sound: true,
-              data: {
-                type: 'recurring_reminder',
-                sequence,
-                scheduledFor: triggerDate.getTime(),
-                sourceMainList: sourceName,
-              },
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: triggerDate,
-            },
-          })
-        );
-        scheduled += 1;
+          allCandidates.push({
+            fireTime: triggerDate,
+            body: pickedBody,
+            sourceListName: ml.name,
+          });
+          scheduledFromList += 1;
+        }
       }
 
-      const notificationIds = await Promise.all(tasks);
-      await AsyncStorage.setItem(
-        this.RECURRING_NOTIFICATIONS_KEY,
-        JSON.stringify(notificationIds)
+      allCandidates.sort((a, b) => a.fireTime.getTime() - b.fireTime.getTime());
+      const toSchedule = allCandidates.slice(0, MAX);
+
+      const tasks = toSchedule.map((c, idx) =>
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Productivity Reminder',
+            body: c.body,
+            sound: true,
+            data: {
+              type: 'recurring_reminder',
+              sequence: idx + 1,
+              scheduledFor: c.fireTime.getTime(),
+              sourceMainList: c.sourceListName,
+            },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: c.fireTime,
+          },
+        })
       );
 
+      const notificationIds = await Promise.all(tasks);
+      await AsyncStorage.setItem(this.RECURRING_NOTIFICATIONS_KEY, JSON.stringify(notificationIds));
+
       const quietLabel = quiet.enabled ? `${quiet.startMinutes}–${quiet.endMinutes}` : 'off';
-      console.log(`Scheduled ${notificationIds.length} recurring notifications from "${sourceName}" (${messages.length} messages cycling, every ${intervalMinutes}min, quiet=${quietLabel}).`);
+      console.log(`Scheduled ${notificationIds.length} notifications across ${mainLists.length} main list(s) (quiet=${quietLabel}).`);
       return notificationIds;
     } catch (error) {
-      console.error('Error scheduling recurring notifications:', error);
+      console.error('Error scheduling notifications:', error);
       return [];
     }
   }

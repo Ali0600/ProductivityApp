@@ -256,13 +256,7 @@ function Homepage(props){
 
     const persistAndReschedule = useCallback(async (next) => {
         setNotificationMessages(currentMainList, next);
-        await NotificationService.setNotificationSource(currentMainList);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList,
-            messages: next,
-            intervalMinutes: currentInterval,
-        });
-    }, [currentMainList, currentInterval, setNotificationMessages]);
+    }, [currentMainList, setNotificationMessages]);
 
     const handleOpenInterval = useCallback(() => {
         tapLight();
@@ -279,22 +273,12 @@ function Homepage(props){
     const handleIntervalChange = useCallback(async (minutes) => {
         setNotificationInterval(currentMainList, minutes);
         selection();
-        await NotificationService.setNotificationSource(currentMainList);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList,
-            messages: currentMessages,
-            intervalMinutes: minutes,
-        });
-    }, [currentMainList, currentMessages, setNotificationInterval]);
+    }, [currentMainList, setNotificationInterval]);
 
     const persistQuietHours = useCallback(async (next) => {
         await NotificationService.setQuietHours(next);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList || undefined,
-            messages: currentMessages.length ? currentMessages : undefined,
-            intervalMinutes: currentInterval,
-        });
-    }, [currentMainList, currentMessages, currentInterval]);
+        await NotificationService.scheduleAllMainListsNotifications();
+    }, []);
 
     const handleOpenQuietHours = useCallback(() => {
         tapLight();

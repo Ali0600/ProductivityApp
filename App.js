@@ -24,7 +24,7 @@ export default function App() {
 
         const notificationsEnabled = await NotificationService.getNotificationsEnabled();
         if (notificationsEnabled) {
-          await NotificationService.scheduleRecurringNotifications();
+          await NotificationService.scheduleAllMainListsNotifications();
           console.log('🔔 APP.JS: Scheduled recurring notifications');
         } else {
           console.log('🔔 APP.JS: Notifications disabled by user, skipping schedule');
