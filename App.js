@@ -1,5 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { Alert } from 'react-native';
+import * as Updates from 'expo-updates';
 import Homepage from './app/screens/Homepage';
 import TileGrid from './app/screens/TileGrid';
 import 'react-native-gesture-handler';
@@ -35,6 +37,35 @@ export default function App() {
     };
 
     initializeNotifications();
+  }, []);
+
+  useEffect(() => {
+    const checkForOTAUpdate = async () => {
+      if (__DEV__ || !Updates.isEnabled) return;
+      try {
+        const result = await Updates.checkForUpdateAsync();
+        if (!result.isAvailable) return;
+        await Updates.fetchUpdateAsync();
+        Alert.alert(
+          'Update Ready',
+          'A new version of ADHDone is ready to install.',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Reload',
+              onPress: () => {
+                Updates.reloadAsync().catch((err) =>
+                  console.error('Reload after update failed:', err)
+                );
+              },
+            },
+          ]
+        );
+      } catch (error) {
+        console.error('OTA update check failed:', error);
+      }
+    };
+    checkForOTAUpdate();
   }, []);
 
   return (
