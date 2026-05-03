@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
+import { View, StyleSheet, Text, Modal, SafeAreaView, TouchableOpacity, TextInput, KeyboardAvoidingView, FlatList, ScrollView, ActivityIndicator, ActionSheetIOS, Alert, Switch } from "react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -52,6 +52,16 @@ const isRuleCurrentlyActive = (rule, mainData) => {
     return false;
 };
 
+const rulesEqual = (a, b) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (a.type !== b.type) return false;
+    if (a.type === 'task') return a.taskId === b.taskId && a.sideListName === b.sideListName;
+    if (a.type === 'sideList') return a.sideListName === b.sideListName;
+    if (a.type === 'mainList') return true;
+    return false;
+};
+
 const formatRuleChip = (rule, mainData) => {
     if (!rule) return { label: '+ Add pause rule', tone: 'dim' };
     if (isRuleTargetMissing(rule, mainData)) return { label: '⚠  Rule target missing', tone: 'warn' };
@@ -100,12 +110,14 @@ function Homepage(props){
         draftName: '',
         draftNotes: '',
         draftVariables: [],
+        draftTags: [],
         creationTime: null,
         completedAt: null,
     });
+    const [tagInputDraft, setTagInputDraft] = useState('');
+    const [activeTags, setActiveTags] = useState(() => new Set());
     const [completionLogger, setCompletionLogger] = useState({
         visible: false,
-        taskIndex: -1,
         taskId: null,
         taskName: '',
         drafts: [],
@@ -132,10 +144,10 @@ function Homepage(props){
     const {
         addTaskToList,
         reorderTasksInList,
-        removeTaskFromListByIndex,
+        removeTaskFromList,
         updateTaskInList,
         moveTaskFromList,
-        completeTaskInListByIndex,
+        completeTaskInList,
     } = useListTasks(currentList);
 
     const handleAddTask = () => {
@@ -209,6 +221,31 @@ function Homepage(props){
         return ml?.notificationMessages ?? [];
     }, [mainLists, currentMainList]);
 
+    const availableTags = useMemo(() => {
+        const seen = new Map();
+        for (const task of currentListData?.tasks ?? []) {
+            for (const t of task.tags ?? []) {
+                const key = (t ?? '').toLowerCase();
+                if (!key || seen.has(key)) continue;
+                seen.set(key, t);
+            }
+        }
+        return [...seen.values()].sort((a, b) => a.localeCompare(b));
+    }, [currentListData?.tasks]);
+
+    const visibleTasks = useMemo(() => {
+        const tasks = currentListData?.tasks ?? [];
+        if (activeTags.size === 0) return tasks;
+        const lowered = new Set([...activeTags].map((t) => t.toLowerCase()));
+        return tasks.filter((task) =>
+            (task.tags ?? []).some((t) => lowered.has((t ?? '').toLowerCase()))
+        );
+    }, [currentListData?.tasks, activeTags]);
+
+    useEffect(() => {
+        setActiveTags(new Set());
+    }, [currentList]);
+
     const currentInterval = useMemo(() => {
         const ml = mainLists.find((m) => m.name === currentMainList);
         return ml?.notificationIntervalMinutes ?? 60;
@@ -229,13 +266,7 @@ function Homepage(props){
 
     const persistAndReschedule = useCallback(async (next) => {
         setNotificationMessages(currentMainList, next);
-        await NotificationService.setNotificationSource(currentMainList);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList,
-            messages: next,
-            intervalMinutes: currentInterval,
-        });
-    }, [currentMainList, currentInterval, setNotificationMessages]);
+    }, [currentMainList, setNotificationMessages]);
 
     const handleOpenInterval = useCallback(() => {
         tapLight();
@@ -252,22 +283,12 @@ function Homepage(props){
     const handleIntervalChange = useCallback(async (minutes) => {
         setNotificationInterval(currentMainList, minutes);
         selection();
-        await NotificationService.setNotificationSource(currentMainList);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList,
-            messages: currentMessages,
-            intervalMinutes: minutes,
-        });
-    }, [currentMainList, currentMessages, setNotificationInterval]);
+    }, [currentMainList, setNotificationInterval]);
 
     const persistQuietHours = useCallback(async (next) => {
         await NotificationService.setQuietHours(next);
-        await NotificationService.scheduleRecurringNotifications({
-            sourceName: currentMainList || undefined,
-            messages: currentMessages.length ? currentMessages : undefined,
-            intervalMinutes: currentInterval,
-        });
-    }, [currentMainList, currentMessages, currentInterval]);
+        await NotificationService.scheduleAllMainListsNotifications();
+    }, []);
 
     const handleOpenQuietHours = useCallback(() => {
         tapLight();
@@ -316,7 +337,10 @@ function Homepage(props){
         if (!trimmed) return;
         tapLight();
         setNewMessageText('');
-        await persistAndReschedule([...currentMessages, { body: trimmed, rule: null }]);
+        await persistAndReschedule([
+            ...currentMessages,
+            { body: trimmed, rule: null, armedAt: Date.now() },
+        ]);
     }, [newMessageText, currentMessages, persistAndReschedule]);
 
     const handleDeleteMessage = useCallback(async (idx) => {
@@ -348,8 +372,15 @@ function Homepage(props){
         let cleanRule = draftRule;
         if (cleanRule?.type === 'task' && (!cleanRule.taskId || !cleanRule.sideListName)) cleanRule = null;
         else if (cleanRule?.type === 'sideList' && !cleanRule.sideListName) cleanRule = null;
+
+        const prev = currentMessages[messageIndex];
+        const prevRule = typeof prev === 'string' ? null : prev?.rule ?? null;
+        const prevArmedAt = typeof prev === 'string' ? null : prev?.armedAt ?? null;
+        const ruleChanged = !rulesEqual(prevRule, cleanRule);
+        const nextArmedAt = ruleChanged ? Date.now() : prevArmedAt;
+
         const next = currentMessages.map((m, i) =>
-            i === messageIndex ? { body: trimmed, rule: cleanRule } : m
+            i === messageIndex ? { body: trimmed, rule: cleanRule, armedAt: nextArmedAt } : m
         );
         handleCloseMessageEditor();
         await persistAndReschedule(next);
@@ -367,9 +398,11 @@ function Homepage(props){
                 name: v.name ?? '',
                 lastValue: v.lastValue ?? '',
             })),
+            draftTags: [...(task.tags ?? [])],
             creationTime: task.creationTime ?? null,
             completedAt: task.completedAt ?? null,
         });
+        setTagInputDraft('');
     }, []);
 
     const handleCloseTaskEditor = useCallback(() => {
@@ -381,8 +414,39 @@ function Homepage(props){
             .map((v) => ({ name: (v.name ?? '').trim(), lastValue: v.lastValue ?? '' }))
             .filter((v) => v.name.length > 0);
 
+    const cleanTags = (tags) => {
+        const seen = new Set();
+        const out = [];
+        for (const t of tags ?? []) {
+            const trimmed = (t ?? '').trim();
+            if (!trimmed) continue;
+            const key = trimmed.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(trimmed);
+        }
+        return out;
+    };
+
+    const addTagFromInput = useCallback(() => {
+        const trimmed = tagInputDraft.trim();
+        if (!trimmed) return;
+        tapLight();
+        setTaskEditor((r) => {
+            const exists = r.draftTags.some((t) => t.toLowerCase() === trimmed.toLowerCase());
+            if (exists) return r;
+            return { ...r, draftTags: [...r.draftTags, trimmed] };
+        });
+        setTagInputDraft('');
+    }, [tagInputDraft]);
+
+    const tagsWithPending = (draftTags) => {
+        const pending = (tagInputDraft ?? '').trim();
+        return pending ? [...(draftTags ?? []), pending] : (draftTags ?? []);
+    };
+
     const handleSaveTask = useCallback(() => {
-        const { taskId, draftName, draftNotes, draftVariables } = taskEditor;
+        const { taskId, draftName, draftNotes, draftVariables, draftTags } = taskEditor;
         if (!taskId) {
             handleCloseTaskEditor();
             return;
@@ -394,12 +458,13 @@ function Homepage(props){
             taskName: trimmed,
             notes: draftNotes ?? '',
             variables: cleanVariables(draftVariables),
+            tags: cleanTags(tagsWithPending(draftTags)),
         });
         handleCloseTaskEditor();
-    }, [taskEditor, updateTaskInList, handleCloseTaskEditor]);
+    }, [taskEditor, tagInputDraft, updateTaskInList, handleCloseTaskEditor]);
 
     const handleMoveTaskTo = useCallback((toListName) => {
-        const { taskId, draftName, draftNotes, draftVariables } = taskEditor;
+        const { taskId, draftName, draftNotes, draftVariables, draftTags } = taskEditor;
         if (!taskId || !toListName || toListName === currentList) return;
         selection();
         const trimmed = (draftName ?? '').trim();
@@ -408,35 +473,35 @@ function Homepage(props){
                 taskName: trimmed,
                 notes: draftNotes ?? '',
                 variables: cleanVariables(draftVariables),
+                tags: cleanTags(tagsWithPending(draftTags)),
             });
         }
         moveTaskFromList(toListName, taskId);
         handleCloseTaskEditor();
-    }, [taskEditor, currentList, updateTaskInList, moveTaskFromList, handleCloseTaskEditor]);
+    }, [taskEditor, tagInputDraft, currentList, updateTaskInList, moveTaskFromList, handleCloseTaskEditor]);
 
-    const handleCompleteTask = useCallback((index) => {
-        const t = currentListData?.tasks?.[index];
-        if (t?.variables?.length > 0) {
+    const handleCompleteTask = useCallback((task) => {
+        if (!task?.id) return;
+        if (task.variables?.length > 0) {
             tapLight();
             setCompletionLogger({
                 visible: true,
-                taskIndex: index,
-                taskId: t.id,
-                taskName: t.taskName ?? '',
-                drafts: t.variables.map((v) => ({ name: v.name, value: v.lastValue ?? '' })),
+                taskId: task.id,
+                taskName: task.taskName ?? '',
+                drafts: task.variables.map((v) => ({ name: v.name, value: v.lastValue ?? '' })),
             });
             return;
         }
-        completeTaskInListByIndex(index);
-    }, [currentListData, completeTaskInListByIndex]);
+        completeTaskInList(task.id);
+    }, [completeTaskInList]);
 
     const handleCloseCompletionLogger = useCallback(() => {
         setCompletionLogger((r) => ({ ...r, visible: false }));
     }, []);
 
     const handleSaveCompletion = useCallback(() => {
-        const { taskIndex, taskId, drafts } = completionLogger;
-        if (taskIndex < 0 || !taskId) {
+        const { taskId, drafts } = completionLogger;
+        if (!taskId) {
             handleCloseCompletionLogger();
             return;
         }
@@ -444,9 +509,9 @@ function Homepage(props){
         updateTaskInList(taskId, {
             variables: drafts.map((d) => ({ name: d.name, lastValue: d.value ?? '' })),
         });
-        completeTaskInListByIndex(taskIndex);
+        completeTaskInList(taskId);
         handleCloseCompletionLogger();
-    }, [completionLogger, updateTaskInList, completeTaskInListByIndex, handleCloseCompletionLogger]);
+    }, [completionLogger, updateTaskInList, completeTaskInList, handleCloseCompletionLogger]);
 
     const handleOpenScheduled = useCallback(async () => {
         tapLight();
@@ -951,6 +1016,11 @@ function Homepage(props){
                                     colorScheme="dark"
                                     tintColor="rgba(46, 46, 80, 0.45)"
                                 >
+                                    <ScrollView
+                                        keyboardShouldPersistTaps="handled"
+                                        contentContainerStyle={{ paddingBottom: 16 }}
+                                        showsVerticalScrollIndicator={false}
+                                    >
                                     <Text style={styles.settingsTitle}>Edit task</Text>
 
                                     <Text style={styles.ruleSectionLabel}>Name</Text>
@@ -991,7 +1061,21 @@ function Homepage(props){
                                                         ),
                                                     }))
                                                 }
-                                                placeholder="Variable name (e.g., Weight)"
+                                                placeholder="Name"
+                                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                            />
+                                            <TextInput
+                                                style={styles.variableValueInput}
+                                                value={v.lastValue}
+                                                onChangeText={(text) =>
+                                                    setTaskEditor((r) => ({
+                                                        ...r,
+                                                        draftVariables: r.draftVariables.map((x, i) =>
+                                                            i === idx ? { ...x, lastValue: text } : x
+                                                        ),
+                                                    }))
+                                                }
+                                                placeholder="Value"
                                                 placeholderTextColor="rgba(255,255,255,0.5)"
                                             />
                                             <TouchableOpacity
@@ -1021,6 +1105,44 @@ function Homepage(props){
                                         <Text style={styles.addVariableText}>Add variable</Text>
                                     </TouchableOpacity>
 
+                                    <Text style={styles.ruleSectionLabel}>Tags</Text>
+                                    {taskEditor.draftTags.length > 0 ? (
+                                        <View style={styles.tagChipsWrap}>
+                                            {taskEditor.draftTags.map((t, idx) => (
+                                                <View style={styles.tagChip} key={`tag-${idx}`}>
+                                                    <Text style={styles.tagChipText} numberOfLines={1}>{t}</Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => {
+                                                            tapLight();
+                                                            setTaskEditor((r) => ({
+                                                                ...r,
+                                                                draftTags: r.draftTags.filter((_, i) => i !== idx),
+                                                            }));
+                                                        }}
+                                                    >
+                                                        <SymbolView name="xmark.circle.fill" size={16} tintColor="rgba(255,255,255,0.7)" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    ) : null}
+                                    <View style={styles.tagInputRow}>
+                                        <TextInput
+                                            style={styles.tagInput}
+                                            value={tagInputDraft}
+                                            onChangeText={setTagInputDraft}
+                                            placeholder="New tag"
+                                            placeholderTextColor="rgba(255,255,255,0.5)"
+                                            onSubmitEditing={addTagFromInput}
+                                            returnKeyType="done"
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                        <TouchableOpacity onPress={addTagFromInput}>
+                                            <SymbolView name="plus.circle.fill" size={28} tintColor="white" />
+                                        </TouchableOpacity>
+                                    </View>
+
                                     {(taskEditor.creationTime || taskEditor.completedAt) ? (
                                         <View style={styles.taskEditorMeta}>
                                             {taskEditor.creationTime ? (
@@ -1044,28 +1166,26 @@ function Homepage(props){
                                         return (
                                             <>
                                                 <Text style={styles.ruleSectionLabel}>Move to</Text>
-                                                <FlatList
-                                                    data={others}
-                                                    keyExtractor={(s) => s.listName}
-                                                    renderItem={({ item }) => (
-                                                        <TouchableOpacity
-                                                            style={styles.rulePickerRow}
-                                                            onPress={() => handleMoveTaskTo(item.listName)}
-                                                        >
-                                                            <Text style={styles.rulePickerText} numberOfLines={1}>
-                                                                {item.listName}
-                                                            </Text>
-                                                            <SymbolView
-                                                                name="arrow.right.circle.fill"
-                                                                size={22}
-                                                                tintColor="rgba(255,255,255,0.6)"
-                                                            />
-                                                        </TouchableOpacity>
-                                                    )}
-                                                />
+                                                {others.map((item) => (
+                                                    <TouchableOpacity
+                                                        key={item.listName}
+                                                        style={styles.rulePickerRow}
+                                                        onPress={() => handleMoveTaskTo(item.listName)}
+                                                    >
+                                                        <Text style={styles.rulePickerText} numberOfLines={1}>
+                                                            {item.listName}
+                                                        </Text>
+                                                        <SymbolView
+                                                            name="arrow.right.circle.fill"
+                                                            size={22}
+                                                            tintColor="rgba(255,255,255,0.6)"
+                                                        />
+                                                    </TouchableOpacity>
+                                                ))}
                                             </>
                                         );
                                     })()}
+                                    </ScrollView>
                                 </GlassCard>
 
                                 <GlassCard
@@ -1121,6 +1241,7 @@ function Homepage(props){
                                                 placeholder={`Enter ${d.name}`}
                                                 placeholderTextColor="rgba(255,255,255,0.5)"
                                                 returnKeyType={idx === completionLogger.drafts.length - 1 ? 'done' : 'next'}
+                                                autoFocus={idx === 0}
                                             />
                                         </View>
                                     ))}
@@ -1303,8 +1424,41 @@ function Homepage(props){
                         </GlassCard>
                     </SafeAreaView>
 
+                    {availableTags.length > 0 ? (
+                        <View style={styles.tagFilterStrip}>
+                            <FlatList
+                                data={availableTags}
+                                keyExtractor={(t) => t}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.tagFilterContent}
+                                renderItem={({ item }) => {
+                                    const active = activeTags.has(item);
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                selection();
+                                                setActiveTags((prev) => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(item)) next.delete(item);
+                                                    else next.add(item);
+                                                    return next;
+                                                });
+                                            }}
+                                            style={[styles.tagFilterChip, active && styles.tagFilterChipActive]}
+                                        >
+                                            <Text style={[styles.tagFilterChipText, active && styles.tagFilterChipTextActive]}>
+                                                {item}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                            />
+                        </View>
+                    ) : null}
+
                     <FlatList
-                        data={currentListData?.tasks ?? []}
+                        data={visibleTasks}
                         keyExtractor={(item, index) => item.id || `task-${currentList}-${index}`}
                         renderItem={({ item, index }) => (
                             <Task
@@ -1312,8 +1466,8 @@ function Homepage(props){
                                 index={index}
                                 taskId={item.id || `task-${currentList}-${index}`}
                                 creationTime={moment(item.completedAt ?? item.creationTime).fromNow()}
-                                onRemove={removeTaskFromListByIndex}
-                                onComplete={handleCompleteTask}
+                                onRemove={() => removeTaskFromList(item.id)}
+                                onComplete={() => handleCompleteTask(item)}
                                 onUpdate={updateTaskInList}
                                 onPress={() => handleOpenTaskEditor(item)}
                                 variables={item.variables}
@@ -1321,7 +1475,7 @@ function Homepage(props){
                         )}
                         ListEmptyComponent={
                             <Text style={{color: 'white', padding: 20, textAlign: 'center'}}>
-                                No tasks in this list
+                                {activeTags.size > 0 ? 'No tasks match the selected tags' : 'No tasks in this list'}
                             </Text>
                         }
                     />
@@ -1600,6 +1754,15 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     variableNameInput: {
+        flex: 1.4,
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    variableValueInput: {
         flex: 1,
         color: 'white',
         borderWidth: 1,
@@ -1619,6 +1782,69 @@ const styles = StyleSheet.create({
     addVariableText: {
         color: 'white',
         fontSize: 14,
+    },
+    tagChipsWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+        marginHorizontal: 16,
+        marginBottom: 8,
+    },
+    tagChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 14,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    tagChipText: {
+        color: 'white',
+        fontSize: 13,
+    },
+    tagInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 16,
+        marginBottom: 12,
+        gap: 10,
+    },
+    tagInput: {
+        flex: 1,
+        color: 'white',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    tagFilterStrip: {
+        paddingVertical: 8,
+    },
+    tagFilterContent: {
+        paddingHorizontal: 12,
+        gap: 8,
+    },
+    tagFilterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
+    tagFilterChipActive: {
+        backgroundColor: 'rgba(165, 180, 252, 0.85)',
+        borderColor: 'rgba(165, 180, 252, 0.85)',
+    },
+    tagFilterChipText: {
+        color: 'rgba(255,255,255,0.85)',
+        fontSize: 13,
+    },
+    tagFilterChipTextActive: {
+        color: 'rgba(15, 15, 36, 0.95)',
+        fontWeight: '600',
     },
     ruleHelpText: {
         color: 'rgba(255,255,255,0.7)',
