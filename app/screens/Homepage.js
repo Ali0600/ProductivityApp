@@ -242,11 +242,18 @@ function Homepage(props){
     }, [mainLists, currentMainList]);
 
     const handleOpenMessages = useCallback(() => {
+        console.log('[DEBUG openMessages] currentMainList=', JSON.stringify(currentMainList));
+        console.log('[DEBUG openMessages] all mainLists=',
+            mainLists.map((ml) => ({
+                name: ml.name,
+                msgs: (ml.notificationMessages ?? []).map((m) => (typeof m === 'string' ? m : m?.body)),
+            }))
+        );
         setNewMessageText('');
         setMessagesModalVisible(true);
         setSettingsVisible(false);
         tapLight();
-    }, []);
+    }, [currentMainList, mainLists]);
 
     const handleCloseMessages = useCallback(() => {
         tapLight();

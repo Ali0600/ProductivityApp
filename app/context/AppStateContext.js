@@ -46,6 +46,21 @@ export const AppStateProvider = ({ children }) => {
             );
             return { ...ml, notificationMessages: normalized };
           });
+          console.log('[DEBUG load] mainLists from storage=',
+            migrated.map((ml) => ({
+              name: ml.name,
+              msgCount: ml.notificationMessages?.length ?? 0,
+              msgRefId: ml.notificationMessages,
+            }))
+          );
+          const refs = migrated.map((ml) => ml.notificationMessages);
+          for (let i = 0; i < refs.length; i++) {
+            for (let j = i + 1; j < refs.length; j++) {
+              if (refs[i] === refs[j]) {
+                console.warn(`[DEBUG load] ALIAS! lists "${migrated[i].name}" and "${migrated[j].name}" share notificationMessages reference`);
+              }
+            }
+          }
           setMainLists(migrated);
         } else {
           const defaults = createDefaultMainLists();
@@ -330,11 +345,19 @@ export const AppStateProvider = ({ children }) => {
   }, []);
 
   const setNotificationMessages = useCallback((mainListName, messages) => {
-    setMainLists((prev) =>
-      prev.map((ml) =>
+    setMainLists((prev) => {
+      console.log('[DEBUG setNotificationMessages] target=', JSON.stringify(mainListName), 'newCount=', messages.length);
+      console.log('[DEBUG setNotificationMessages] prev names=', prev.map((ml) => ml.name));
+      const matches = prev.filter((ml) => ml.name === mainListName).length;
+      console.log('[DEBUG setNotificationMessages] matches=', matches);
+      const next = prev.map((ml) =>
         ml.name === mainListName ? { ...ml, notificationMessages: messages } : ml
-      )
-    );
+      );
+      console.log('[DEBUG setNotificationMessages] next msg counts=',
+        next.map((ml) => ({ name: ml.name, n: ml.notificationMessages?.length ?? 0 }))
+      );
+      return next;
+    });
   }, []);
 
   const setNotificationInterval = useCallback((mainListName, minutes) => {
