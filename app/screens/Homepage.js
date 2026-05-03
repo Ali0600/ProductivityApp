@@ -9,6 +9,9 @@ import Animated, {
     Easing,
 } from 'react-native-reanimated';
 import NotificationService from "../services/notificationService";
+import * as Sharing from 'expo-sharing';
+import { Paths, File } from 'expo-file-system';
+import * as Clipboard from 'expo-clipboard';
 import Task from "../components/Task";
 import List from "../components/List";
 import GlassCard from "../components/GlassCard";
@@ -527,6 +530,57 @@ function Homepage(props){
         setScheduledList(list);
     }, []);
 
+    const handleExport = useCallback(() => {
+        tapLight();
+        const payload = {
+            app: 'ADHDone',
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            mainLists,
+        };
+        const json = JSON.stringify(payload, null, 2);
+        ActionSheetIOS.showActionSheetWithOptions(
+            {
+                title: 'Export ADHDone Data',
+                options: ['Copy as JSON', 'Save Backup File…', 'Cancel'],
+                cancelButtonIndex: 2,
+            },
+            async (idx) => {
+                if (idx === 0) {
+                    try {
+                        await Clipboard.setStringAsync(json);
+                        success();
+                        Alert.alert('Copied', 'Backup JSON copied to clipboard.');
+                    } catch (err) {
+                        console.error('Copy export failed:', err);
+                        Alert.alert('Copy failed', 'Could not copy backup to clipboard.');
+                    }
+                } else if (idx === 1) {
+                    try {
+                        const dateStamp = new Date().toISOString().slice(0, 10);
+                        const filename = `adhdone-backup-${dateStamp}.json`;
+                        const file = new File(Paths.cache, filename);
+                        if (file.exists) file.delete();
+                        file.create();
+                        file.write(json);
+                        if (!(await Sharing.isAvailableAsync())) {
+                            Alert.alert('Sharing unavailable', 'This device cannot share files.');
+                            return;
+                        }
+                        await Sharing.shareAsync(file.uri, {
+                            mimeType: 'application/json',
+                            UTI: 'public.json',
+                            dialogTitle: 'ADHDone Backup',
+                        });
+                    } catch (err) {
+                        console.error('File export failed:', err);
+                        Alert.alert('Export failed', 'Could not create backup file.');
+                    }
+                }
+            }
+        );
+    }, [mainLists]);
+
     const pulse = useSharedValue(0);
     useEffect(() => {
         pulse.value = withRepeat(
@@ -729,6 +783,11 @@ function Homepage(props){
                             <TouchableOpacity onPress={handleOpenScheduled} style={styles.settingsRow}>
                                 <Text style={styles.settingsRowLabel}>View Scheduled</Text>
                                 <SymbolView name="chevron.right" size={20} tintColor="white" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={handleExport} style={styles.settingsRow}>
+                                <Text style={styles.settingsRowLabel}>Export Data</Text>
+                                <SymbolView name="square.and.arrow.up" size={20} tintColor="white" />
                             </TouchableOpacity>
                         </GlassCard>
 
