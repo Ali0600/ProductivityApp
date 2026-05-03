@@ -28,13 +28,15 @@ const startOfDayMs = (d) => {
   return x.getTime();
 };
 
-const isRuleActive = (rule, sourceMainList, triggerDate) => {
+const isRuleActive = (rule, sourceMainList, triggerDate, armedAt) => {
   if (!rule || !sourceMainList) return false;
   const dayStart = startOfDayMs(triggerDate);
+  const armed = armedAt ? new Date(armedAt).getTime() : 0;
+  const lowerBound = Math.max(dayStart, armed);
   const dayEnd = triggerDate.getTime();
   const hitWindow = (ts) => {
     const t = ts ? new Date(ts).getTime() : 0;
-    return t >= dayStart && t < dayEnd;
+    return t >= lowerBound && t < dayEnd;
   };
   if (rule.type === 'task') {
     const sl = sourceMainList.sideLists?.find((s) => s.listName === rule.sideListName);
@@ -312,8 +314,9 @@ export default class NotificationService {
             const m = messages[(scheduledFromList + attempt) % messages.length];
             const body = typeof m === 'string' ? m : m?.body;
             const rule = typeof m === 'string' ? null : m?.rule;
+            const armedAt = typeof m === 'string' ? null : m?.armedAt;
             if (!body) continue;
-            if (!isRuleActive(rule, ml, triggerDate)) {
+            if (!isRuleActive(rule, ml, triggerDate, armedAt)) {
               pickedBody = body;
               break;
             }

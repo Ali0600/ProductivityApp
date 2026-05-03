@@ -52,6 +52,16 @@ const isRuleCurrentlyActive = (rule, mainData) => {
     return false;
 };
 
+const rulesEqual = (a, b) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (a.type !== b.type) return false;
+    if (a.type === 'task') return a.taskId === b.taskId && a.sideListName === b.sideListName;
+    if (a.type === 'sideList') return a.sideListName === b.sideListName;
+    if (a.type === 'mainList') return true;
+    return false;
+};
+
 const formatRuleChip = (rule, mainData) => {
     if (!rule) return { label: '+ Add pause rule', tone: 'dim' };
     if (isRuleTargetMissing(rule, mainData)) return { label: '⚠  Rule target missing', tone: 'warn' };
@@ -327,7 +337,10 @@ function Homepage(props){
         if (!trimmed) return;
         tapLight();
         setNewMessageText('');
-        await persistAndReschedule([...currentMessages, { body: trimmed, rule: null }]);
+        await persistAndReschedule([
+            ...currentMessages,
+            { body: trimmed, rule: null, armedAt: Date.now() },
+        ]);
     }, [newMessageText, currentMessages, persistAndReschedule]);
 
     const handleDeleteMessage = useCallback(async (idx) => {
@@ -359,8 +372,15 @@ function Homepage(props){
         let cleanRule = draftRule;
         if (cleanRule?.type === 'task' && (!cleanRule.taskId || !cleanRule.sideListName)) cleanRule = null;
         else if (cleanRule?.type === 'sideList' && !cleanRule.sideListName) cleanRule = null;
+
+        const prev = currentMessages[messageIndex];
+        const prevRule = typeof prev === 'string' ? null : prev?.rule ?? null;
+        const prevArmedAt = typeof prev === 'string' ? null : prev?.armedAt ?? null;
+        const ruleChanged = !rulesEqual(prevRule, cleanRule);
+        const nextArmedAt = ruleChanged ? Date.now() : prevArmedAt;
+
         const next = currentMessages.map((m, i) =>
-            i === messageIndex ? { body: trimmed, rule: cleanRule } : m
+            i === messageIndex ? { body: trimmed, rule: cleanRule, armedAt: nextArmedAt } : m
         );
         handleCloseMessageEditor();
         await persistAndReschedule(next);
