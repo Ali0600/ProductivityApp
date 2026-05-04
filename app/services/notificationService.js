@@ -296,6 +296,8 @@ export default class NotificationService {
 
       const allCandidates = [];
 
+      // Flatten messages across main lists so we can stagger same-interval groups.
+      const flatMessages = [];
       for (const ml of mainLists) {
         const messages = Array.isArray(ml.notificationMessages) ? ml.notificationMessages : [];
         if (messages.length === 0) continue;
@@ -307,23 +309,43 @@ export default class NotificationService {
           const rule = typeof m === 'string' ? null : m?.rule;
           const armedAt = typeof m === 'string' ? null : m?.armedAt;
           const intervalMinutes = (typeof m === 'string' ? null : m?.intervalMinutes) ?? listFallbackMinutes;
-          const intervalMs = intervalMinutes * 60 * 1000;
+          flatMessages.push({ ml, body, rule, armedAt, intervalMinutes });
+        }
+      }
 
-          let scheduledFromMessage = 0;
-          let candidate = 0;
-          while (scheduledFromMessage < MAX && candidate < MAX_CANDIDATES_PER_MESSAGE) {
-            candidate += 1;
-            const triggerDate = new Date(baseTime + candidate * intervalMs);
-            if (quiet.enabled && isInQuietHours(triggerDate, quiet.startMinutes, quiet.endMinutes)) continue;
-            if (isRuleActive(rule, ml, triggerDate, armedAt)) continue;
+      // Within each same-interval group, offset messages by (idx / groupSize) * interval
+      // so two 60-min messages land 30 min apart instead of firing together.
+      const groupTotals = new Map();
+      for (const fm of flatMessages) {
+        groupTotals.set(fm.intervalMinutes, (groupTotals.get(fm.intervalMinutes) ?? 0) + 1);
+      }
+      const groupSeen = new Map();
+      for (const fm of flatMessages) {
+        const idx = groupSeen.get(fm.intervalMinutes) ?? 0;
+        const total = groupTotals.get(fm.intervalMinutes);
+        const intervalMs = fm.intervalMinutes * 60 * 1000;
+        fm.staggerOffsetMs = total > 1 ? Math.round((idx * intervalMs) / total) : 0;
+        groupSeen.set(fm.intervalMinutes, idx + 1);
+      }
 
-            allCandidates.push({
-              fireTime: triggerDate,
-              body,
-              sourceListName: ml.name,
-            });
-            scheduledFromMessage += 1;
-          }
+      for (const fm of flatMessages) {
+        const { ml, body, rule, armedAt, intervalMinutes, staggerOffsetMs } = fm;
+        const intervalMs = intervalMinutes * 60 * 1000;
+
+        let scheduledFromMessage = 0;
+        let candidate = 0;
+        while (scheduledFromMessage < MAX && candidate < MAX_CANDIDATES_PER_MESSAGE) {
+          candidate += 1;
+          const triggerDate = new Date(baseTime + staggerOffsetMs + candidate * intervalMs);
+          if (quiet.enabled && isInQuietHours(triggerDate, quiet.startMinutes, quiet.endMinutes)) continue;
+          if (isRuleActive(rule, ml, triggerDate, armedAt)) continue;
+
+          allCandidates.push({
+            fireTime: triggerDate,
+            body,
+            sourceListName: ml.name,
+          });
+          scheduledFromMessage += 1;
         }
       }
 
