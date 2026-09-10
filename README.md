@@ -1,12 +1,11 @@
-# ADHDone
+# Productivity App
 
-[![CI](https://github.com/Ali0600/ProductivityApp/actions/workflows/ci.yml/badge.svg)](https://github.com/Ali0600/ProductivityApp/actions/workflows/ci.yml)
+[![CI](https://github.com/Ali0600/productivity-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Ali0600/productivity-app/actions/workflows/ci.yml)
 
-A productivity & habit app for iOS, designed around how an ADHD brain actually works:
-low-friction capture, a visual "what's gone stale" home screen, and a notification engine
-that nudges without nagging. Built with React Native + Expo and shipped to TestFlight via EAS.
-
-> Branded **ADHDone** in the UI; package name `adhd-habits`.
+A daily habit and task tracker for iOS. Adding something takes two taps, the home screen sorts
+everything by how long it's been neglected so whatever you've been avoiding is the first thing
+you see, and a notification engine reminds you without nagging. Built with React Native + Expo
+and shipped to TestFlight via EAS.
 
 ---
 
